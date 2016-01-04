@@ -1,0 +1,90 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Ease-Up Example</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width">
+        
+        <!-- ==================== CSS ==================== -->
+        
+        <!-- Bootstrap CSS -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+        <!-- Font Awesome -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+        <!-- Custom Stylesheet Override -->
+        <link rel="stylesheet" href="css/styles.css">
+        
+        <!-- ==================== JS ==================== -->
+        
+        <!-- Imports jQuery -->
+        <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+        <!-- Upload JS -->
+        <script type="text/javascript" src="js/upload.js"></script>
+        
+        <!--[if IE]>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <![endif]-->
+        <!--[if lt IE 9]>
+        <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+        <![endif]-->
+    </head>
+    <body>
+        <script type="text/javascript">
+            var usr = "username"; // establish username (for naming the uploads, I use php to get the logged in user and put their name here, it keeps the file system organized)
+        </script>
+        <div class="view">
+            <div class="row" style="text-align: center">
+                <div class="col-md-10 col-md-offset-1">
+                    <h1>Create a New Lesson</h1>
+                    <div id="feedback" style="height: 50px;"></div>
+                </div>
+            </div>
+            <div class="row" style="padding-top: 50px;">
+                <form action="" method="post" enctype="multipart/form-data">
+                    <div class="col-md-5 col-md-offset-1">
+                        <div class="form-group">
+                            <label for="title">Title</label>
+                            <input type="text" class="form-control squared-off" id="title" name="title" placeholder="Basics of Geometry" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="description">Description</label>
+                            <textarea class="form-control squared-off" id="description" name="description" placeholder="This lesson will take you through the basics of Geometry. We will cover circles, basic Trigonometry, as well as lines and curves." autocomplete="off"></textarea>
+                        </div>
+                        <div id="upload_progress"></div>
+                        <br /><br />
+                        <div id="uploaded"></div>
+                        <br /><br />
+                        <button type="button" id="upload" class="btn btn-success squared-off" onclick='EaseUp.createLesson("php/create-lesson.php")'>Create</button>
+                    </div>
+                    <div class="col-md-5">
+                        <div id="hierarchy">
+                            <div class="unit" unit="0" id="unit-0"><a href="javascript:void(0);" onclick="EaseUp.addUnit(this)">Add Unit</a></div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

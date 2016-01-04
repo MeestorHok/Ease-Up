@@ -1,0 +1,76 @@
+@charset "UTF-8";
+
+body {
+    overflow-x: hidden;
+    width: 100%;
+}
+.pointer {
+    cursor: auto;
+}
+.pointer:hover {
+    cursor: pointer;
+}
+
+/****************************************/
+.progress-bar-container {
+    position: relative;
+    width: 100%;
+    height: 20px;
+    background: #DDDDDD;
+    padding: 0;
+}
+.progress-bar-text {
+    z-index: 500;
+    font-weight: bold;
+}
+.progress-bar-progress {
+    position: absolute;
+    height: 100%;
+    z-index: 0;
+    background: #337ab7;
+    top: 0;
+    left: 0;
+    width: 0;
+    padding: 0;
+    margin: 0;
+}
+.files-group{
+    position: relative; 
+    height: 25px; 
+    display: inline-block;
+}
+.files-group div {
+    height: 100%;
+    position: relative;
+}
+.files-group-img {
+    display: inline-block;
+    padding-left: 10px; 
+    height: 100%;
+}
+.unit-description {
+    display: none;
+    margin-top: 10px;
+    margin-left: 60px;
+    height: 75px;
+    width: 240px;
+    max-width: 500px;
+    max-height: 150px;
+}
+.feedback {
+    display: inline-block;
+    color: red;
+}
+
+#uploaded {
+    width: 100%;
+}
+#uploaded td {
+    padding: 2px;
+}
+#upload_progress {
+    display: none;
+}
+#file {
+  position: relative;
+}
