@@ -56,7 +56,7 @@
         /******************************DOM MANIPULATION********************************/
         
         self.addItem = function (thisItem) {  // add item to parent
-            var item, newItem, subItem, itemId, newItemId, idBroken, itemNum, itemDepth, indent;
+            var item, newItem, subItem, itemId, newItemId, idBroken, itemNum, itemDepth;
             
             item = thisItem.parentNode;
             itemId = item.getAttribute('ezup-id') || '0';
