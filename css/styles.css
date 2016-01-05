@@ -12,18 +12,46 @@ body {
 }
 
 /****************************************/
-.progress-bar-container {
+.ezup-inputs-group {
+    display: inline-block;
+    padding-right: 10px;
+    padding-top: 10px;
+}
+.ezup-files-group{
+    position: relative; 
+    height: 25px; 
+    display: inline-block;
+}
+.ezup-files-group div {
+    height: 100%;
+    position: relative;
+}
+.ezup-files-group-img {
+    display: inline-block;
+    padding-left: 10px; 
+    height: 100%;
+}
+
+.ezup-progress-bar {
     position: relative;
     width: 100%;
     height: 20px;
     background: #DDDDDD;
     padding: 0;
 }
-.progress-bar-text {
+.ezup-progress-text-left {
     z-index: 500;
+    float: left;
+    display: inline-block;
     font-weight: bold;
 }
-.progress-bar-progress {
+.ezup-progress-text-right {
+    z-index: 500;
+    float: right;
+    display: inline-block;
+    font-weight: bold;
+}
+.ezup-progress {
     position: absolute;
     height: 100%;
     z-index: 0;
@@ -34,21 +62,8 @@ body {
     padding: 0;
     margin: 0;
 }
-.files-group{
-    position: relative; 
-    height: 25px; 
-    display: inline-block;
-}
-.files-group div {
-    height: 100%;
-    position: relative;
-}
-.files-group-img {
-    display: inline-block;
-    padding-left: 10px; 
-    height: 100%;
-}
-.unit-description {
+
+.ezup-description {
     display: none;
     margin-top: 10px;
     margin-left: 60px;
@@ -57,7 +72,7 @@ body {
     max-width: 500px;
     max-height: 150px;
 }
-.feedback {
+.ezup-feedback {
     display: inline-block;
     color: red;
 }

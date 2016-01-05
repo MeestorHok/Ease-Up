@@ -3,65 +3,35 @@
     
     var EaseUp = new (function () {
         
-        var self = this;
+        var self = this,
+            ajaxURL = '/php/upload.php',
+            useHierarchy = true,
+            hierarchyId = 'hierarchy',
+            useAccounts = true,
+            accountName = '',
+            useSummary = true,
+            titleId = 'title',
+            descriptionId = 'description',
+            feedbackId = 'feedback';
         
-        /******************************CREATE HIERARCHY USER INTERFACE********************************/
-        
-        var topic, newTopic, unit, newUnit;  // variables for hierarchy creation
-        
-        self.addUnit = function (thisUnit) {  // add a unit to the hierarchy
-            unit = thisUnit.parentNode;
-            var thisNum = parseInt(unit.getAttribute('unit'));
-            var nextNum = thisNum + 1;
-            unit.innerHTML = '<div style="display: inline-block; padding-right: 10px; padding-top: 10px"><a href="javascript:void(0);" onclick="EaseUp.removeNode(this)"><i class="fa fa-times text-danger"></i></a> Unit ' +
-                nextNum + ': <input type="text" class="h-unit-input squared-off" placeholder="Unit Name Here" name="unit-' + thisNum + '" onkeyup="EaseUp.displayDescription(this, \'unit\', ' + thisNum + ')" /></div>' +
-                '<div class="files-group"><a href="javascript:void(0);" onclick="this.lastChild.click()"><div style="display: inline-block"><i class="fa fa-plus"></i> Add File</div><input type="file" id="file-unit-' +
-                thisNum + '" accept="image/x-png, image/jpeg, video/mp4" class="inputFile" onchange="EaseUp.changeInputFiles(this, \'unit-' + thisNum + '\')" name="file-unit-' + thisNum + '" style="display: none"></a>' +
-                '<div id="feedback-unit-' + thisNum + '" class="feedback" style="display: none;"></div><div style="display: inline-block"></div></div><div style="display:block"><textarea class="unit-description" name="description-unit-' +
-                thisNum + '" id="description-unit-' + thisNum + '" placeholder="Write a description of what the user will learn in this unit here."></textarea></div>';
-            
-            topic = document.createElement('div');
-            topic.setAttribute('topic', 0);
-            topic.setAttribute('class', 'topic');
-            topic.innerHTML = '&nbsp&nbsp&nbsp&nbsp<a href="javascript:void(0);" onclick="EaseUp.addTopic(this)">Add Topic</a>';
-            
-            unit.appendChild(topic);
-            
-            newUnit = document.createElement('div');
-            newUnit.setAttribute('class', 'unit');
-            newUnit.setAttribute('unit', nextNum);
-            newUnit.setAttribute('id', 'unit-' + nextNum);
-            newUnit.innerHTML = '<a href="javascript:void(0);" onclick="EaseUp.addUnit(this)">Add Unit</a>';
-            
-            document.getElementById('hierarchy').appendChild(newUnit);
+        String.prototype.repeat = function(count) {
+            if (count < 1) return '';
+            var result = '', pattern = this.valueOf();
+            while (count > 1) {
+                if (count & 1) result += pattern;
+                count >>= 1, pattern += pattern;
+            }
+            return result + pattern;
         };
+
+        /******************************DOM MANIPULATION********************************/
         
-        self.addTopic = function (thisTopic) {  // add a topic to the unit within a hierarchy
-            topic = thisTopic.parentNode;
-            unit = topic.parentNode;
-            var unitNum = parseInt(unit.getAttribute('unit'));
-            var thisNum = parseInt(topic.getAttribute('topic'));
-            var nextNum = thisNum + 1;
-            var bothNums = unitNum.toString() + thisNum.toString();
-            topic.setAttribute('id', 'topic-' + bothNums);
-            topic.innerHTML = '<div style="display: inline-block; padding-right: 10px; padding-top: 10px">&nbsp&nbsp&nbsp&nbsp<a href="javascript:void(0);" onclick="removeNode(this)"><i class="fa fa-times text-danger"></i></a> Topic '+
-                nextNum +': <input type="text" class="h-topic-input squared-off" placeholder="Topic Name Here" name="topic-' + bothNums + '" onkeyup="EaseUp.displayDescription(this, \'topic\', \'' + bothNums + '\')" /></div>' +
-                '<div class="files-group"><a href="javascript:void(0);" onclick="this.lastChild.click()"><div style="display: inline-block"><i class="fa fa-plus"></i> Add File</div><input type="file" id="file-topic-' +
-                bothNums + '" accept="image/x-png, image/jpeg, video/mp4" class="inputFile" onchange="EaseUp.changeInputFiles(this, \'topic-' + bothNums + '\')" name="file-topic-' + bothNums + '" style="display: none"></a>' +
-                '<div id="feedback-topic-' + bothNums + '" class="feedback" style="display: none;"></div><div style="display: inline-block"></div></div><div style="display:block"><textarea class="unit-description" name="description-topic-' +
-                bothNums + '" id="description-topic-' + bothNums + '" placeholder="Write a description of what this specific topic will cover."></textarea></div>';
-            
-            newTopic = document.createElement('div');
-            newTopic.setAttribute('topic', nextNum);
-            newTopic.setAttribute('class', 'topic');
-            newTopic.setAttribute('id', 'topic-' + nextNum);
-            newTopic.innerHTML = '&nbsp&nbsp&nbsp&nbsp<a href="javascript:void(0);" onclick="EaseUp.addTopic(this)">Add Topic</a>';
-            
-            topic.parentNode.appendChild(newTopic);
-        };
+        var subitem, newSubitem, item, newItem;
+        
+        
         
         self.removeNode = function (thisNode) {  // remove either a topic or a unit, based on what object calls it
-            if (confirm('Deleting this is permanent, are you sure you wish to do this?')){
+            if (confirm('Are you sure you wish to delete this?')){
                 var node = thisNode.parentNode.parentNode;
                 var parent = node.parentNode;
                 parent.removeChild(node);
@@ -70,48 +40,47 @@
         };
     
         self.reNumber = function (parent) {  // renumbers the elements in a hierarchy after an element has been removed
-            var num = 0;
+            var num = 0, last = parent.lastChild;
             for(var i = 0; i < parent.childNodes.length - 1; i++) {
-                var node = parent.childNodes[i];
+                var node = parent.childNodes[i], oldValue, bothNums, newID;
                 if (node.nodeType == 1) {
-                    if(node.getAttribute('unit') != null){
-                        var oldValue = node.firstChild.lastChild.value;
-                        node.setAttribute('unit', num);
-                        node.setAttribute('id', 'unit-' + num);
-                        node.firstChild.innerHTML = '<a href="javascript:void(0);" onclick="removeNode(this)"><i class="fa fa-times text-danger"></i></a> Unit ' +
-                            (num + 1) + ': <input type="text" class="h-unit-input squared-off" placeholder="Unit Name Here" name="unit-' + num + '" value="' + oldValue + '" onkeyup="displayDescription(this, \'unit\', ' + num + ')" />';
-                    } else if(node.getAttribute('topic') != null) {
-                        var oldValue = node.firstChild.lastChild.value;
-                        var bothNums = node.parentElement.getAttribute('unit').toString() + (num - 3).toString();
-                        var newID = 'topic-' + bothNums;
-                        node.setAttribute('topic', (num - 3));
+                    if(node.getAttribute('ezup-item') != null){
+                        oldValue = node.firstChild.lastChild.value;
+                        node.setAttribute('ezup-item', num);
+                        node.setAttribute('id', 'ezup-item-' + num);
+                        node.firstChild.innerHTML = '<a href="javascript:EaseUp.removeNode(this);"><i class="fa fa-times text-danger"></i></a> Item ' +
+                            (num + 1) + ': <input type="text" placeholder="Item Name Here" name="ezup-item-' + num + '" value="' + oldValue + '" onkeyup="EaseUp.displayDescription(this, \'item\', ' + num + ')" />';
+                    } else if(node.getAttribute('ezup-subitem') != null) {
+                        oldValue = node.firstChild.lastChild.value;
+                        bothNums = node.parentElement.getAttribute('ezup-item').toString() + (num - 3).toString();
+                        newID = 'ezup-subitem-' + bothNums;
+                        node.setAttribute('ezup-subitem', (num - 3));
                         node.setAttribute('id', newID);
                         
-                        node.lastChild.firstChild.setAttribute('id', 'description-'+newID);
-                        node.lastChild.firstChild.setAttribute('name', 'description-'+newID);
-                        node.childNodes[1].firstChild.lastChild.setAttribute('id', 'file-'+newID);
-                        node.childNodes[1].firstChild.lastChild.setAttribute('name', 'file-'+newID);
+                        node.lastChild.firstChild.setAttribute('id', 'ezup-subitem-description-'+newID);
+                        node.lastChild.firstChild.setAttribute('name', 'ezup-subitem-description-'+newID);
+                        node.childNodes[1].firstChild.lastChild.setAttribute('id', 'ezup-subitem-file-'+newID);
+                        node.childNodes[1].firstChild.lastChild.setAttribute('name', 'ezup-subitem-file-'+newID);
                         
-                        node.firstChild.innerHTML = '&nbsp&nbsp&nbsp&nbsp<a href="javascript:void(0);" onclick="removeNode(this)"><i class="fa fa-times text-danger"></i></a> Topic '+
-                            (num - 2) +': <input type="text" class="h-topic-input squared-off" placeholder="Topic Name Here" name="topic-' + bothNums + '" value="' + 
-                            oldValue + '" onkeyup="displayDescription(this, \'topic\', \'' + bothNums + '\')" />';
+                        node.firstChild.innerHTML = '&nbsp&nbsp&nbsp&nbsp<a href="javascript:void(0);" onclick="EaseUp.removeNode(this)"><i class="fa fa-times text-danger"></i></a> Subitem '+
+                            (num - 2) +': <input type="text" placeholder="Subitem Name Here" name="ezup-subitem-' + bothNums + '" value="' + oldValue + 
+                            '" onkeyup="EaseUp.displayDescription(this, \'subitem\', \'' + bothNums + '\')" />';
                     }
                     num += 1;
                 }
             }
-            var last = parent.lastChild;
         
-            if(last.getAttribute('unit') != null) {
-                last.setAttribute('unit', num);
-                last.setAttribute('id', 'unit-' + num);
-            } else if (last.getAttribute('topic') != null) {
-                last.setAttribute('topic', (num - 3));
-                last.setAttribute('id', 'topic-' + (num - 3));
+            if(last.getAttribute('ezup-item') != null) {
+                last.setAttribute('ezup-item', num);
+                last.setAttribute('id', 'ezup-item-' + num);
+            } else if (last.getAttribute('ezup-subitem') != null) {
+                last.setAttribute('ezup-subitem', (num - 3));
+                last.setAttribute('id', 'ezup-subitem-' + (num - 3));
             }
         };
         
         self.displayDescription = function (thisNode, type, num) {  // show description for current unit or topic
-            var id = 'description-' + type + '-' + num;
+            var id = 'ezup-' + type + '-description-' + num;
             if (thisNode.value != null && thisNode.value != "") {
                 $('#' + id).css('display', 'block');
             } else {
@@ -124,7 +93,7 @@
         var mustStay = false,
             errorReason = '',
             ajaxStarted = 0,
-            ajaxFinished = 0;  // variables for uploading
+            ajaxFinished = 0;
     
         self.warnExit = function () {  // warns user of leaving page if upload is part-way through
             if (mustStay) {
@@ -177,20 +146,20 @@
             fileExt = fileExt[fileExt.length - 1].toLowerCase();
             
             // get the title of the lesson
-            var title = $('#title').val().toLowerCase().replace(/\s/g, "_");
+            var title = (useSummary) ? $('#' + titleId).val().toLowerCase().replace(/\s/g, "_") + '.' : '';
             
             var d = new Date; // get the date of upload
             var dateTime = d.getMinutes().toString() + d.getHours().toString() + d.getDate().toString() + d.getMonth().toString() + d.getFullYear().toString();
             var rand = Math.floor(100000000 + Math.random() * 900000000);
-            
-            var newFilename = usr.toString() + '.' + title + '.' + dateTime + '.' + rand.toString() + '.' + fileExt;
+            var usr = (useAccounts) ? accountName + '.' : '';
+            var newFilename = usr + title + dateTime + '.' + rand.toString() + '.' + fileExt;
             
             return newFilename.toString();
         };
             
         self.uploadFile = function (parentID) {  // if user clicks upload button
-            var file = document.getElementById('file-'+parentID).files[0];
-            var feedbackID = 'feedback-' + parentID;
+            var file = document.getElementById('ezup-file-'+parentID).files[0];
+            var feedbackID = 'ezup-feedback-' + parentID;
             var newFilename = '';
             // error handling variables
             var fileTypeCheck = document.getElementById(feedbackID).getAttribute('ftc');
@@ -224,18 +193,18 @@
                         }
                         
                         container = document.createElement('div');
-                        container.setAttribute('class', 'progress-bar-container');
+                        container.setAttribute('class', 'ezup-progress-bar');
                         
                         comparison = document.createElement ('p');
                         comparison.appendChild(document.createTextNode(amount));
-                        comparison.setAttribute('class', 'progress-bar-text float-left');
+                        comparison.setAttribute('class', 'ezup-progress-text-left');
                         
                         num = document.createElement('p');
                         num.appendChild(document.createTextNode(percent + '%'));
-                        num.setAttribute('class', 'progress-bar-text float-right');
+                        num.setAttribute('class', 'ezup-progress-text-right');
                         
                         filled = document.createElement('div');
-                        filled.setAttribute('class', 'progress-bar-progress');
+                        filled.setAttribute('class', 'ezup-progress');
                         filled.setAttribute('style', 'width: ' + percent + '%');
                 
                         container.appendChild(comparison);
@@ -266,7 +235,7 @@
                 });
                     
                 //execute the ajax call
-                request.open('POST', '/upload.php');
+                request.open('POST', ajaxURL);
                 request.setRequestHeader('Cache-Control', 'no-cache');
                 
                 progress.setAttribute('style', 'display: block');
@@ -278,13 +247,13 @@
         };
     
         self.changeInputFiles = function (thisInput, thisNum) {  // if a file is selected or deselected
-            var thisFiles = thisInput.files;
-            var fileTypeCheck = false;
-            var fileSizeCheck = false;
-            var thisID = thisInput.getAttribute('id').toString();
-            var thisFeedbackID = thisInput.parentNode.parentNode.childNodes[1].getAttribute('id').toString();
-            var thisImages = thisInput.parentNode.parentNode.lastChild; // parent to draw thumbnails into
-            var id, img, span, x;
+            var thisFiles = thisInput.files,
+                fileTypeCheck = false,
+                fileSizeCheck = false,
+                thisID = thisInput.getAttribute('id').toString(),
+                thisFeedbackID = thisInput.parentNode.parentNode.childNodes[1].getAttribute('id').toString(),
+                thisImages = thisInput.parentNode.parentNode.lastChild, // parent to draw thumbnails into
+                id, img, span, x;
         
             while(thisImages.hasChildNodes()) { //empty drawn files
                 thisImages.removeChild(thisImages.firstChild);
@@ -295,14 +264,14 @@
             
             // draw selected files
             var file_ext = thisFiles[0].name.split('.')[thisFiles[0].name.split('.').length - 1].toLowerCase();
-            id = 'img-thumb-' + thisNum + '-' + 0;
+            id = 'ezup-thumb-' + thisNum + '-' + 0;
             
             if ($.inArray(file_ext, allowed) !== -1) {
                 fileTypeCheck = true;
                 
                 img = document.createElement('img');
                 img.setAttribute('id', id);
-                img.setAttribute('class', 'files-group-img');
+                img.setAttribute('class', 'ezup-files-group-img');
                 img.setAttribute('title', thisFiles[0].name + ' | ' + self.formatByteSize(thisFiles[0].size));
                 
                 // decide whether to render an image thumbnail or video thumbnail
@@ -345,7 +314,7 @@
                 span = document.createElement('span');
                 span.setAttribute('id', thisID + '-cancel');
                 span.setAttribute('class', 'pointer text-danger');
-                span.setAttribute('onclick', 'clearFiles(\'' + thisID + '\', \'' + thisFeedbackID + '\')');
+                span.setAttribute('onclick', 'EaseUp.clearFiles(\'' + thisID + '\', \'' + thisFeedbackID + '\')');
                 
                 x = document.createElement('i');
                 x.setAttribute('class', 'fa fa-times');
@@ -375,38 +344,38 @@
             var hDump = '{';
             var parent = document.getElementById(hierarchy);
             for(var i = 0; i < parent.childNodes.length - 1; i++) { // foreach unit
-                var unit = parent.childNodes[i];
-                if (unit.nodeType == 1 && unit.firstChild.lastChild.value != null && unit.firstChild.lastChild.value != "") {
-                    var thisNum = unit.getAttribute('unit').toString();
-                    var uDump = '"'+thisNum+'":[';
-                    var uTitle = unit.firstChild.lastChild.value.toString();
-                    var uDescription = unit.childNodes[2].firstChild.value.toString();
-                    var uFilename = self.uploadFile(unit.getAttribute('id').toString());
-                    uDump += '{"title":"'+uTitle+'","description":"'+uDescription+'","file":"'+uFilename+'"}';
-                    if (unit.childNodes.length > 4) {
-                        uDump += ',';
+                var item = parent.childNodes[i];
+                if (item.nodeType == 1 && item.firstChild.lastChild.value != null && item.firstChild.lastChild.value != "") {
+                    var thisNum = item.getAttribute('ezup-item').toString();
+                    var iDump = '"'+thisNum+'":[';
+                    var iTitle = item.firstChild.lastChild.value.toString();
+                    var iDescription = item.childNodes[2].firstChild.value.toString();
+                    var iFilename = self.uploadFile(item.getAttribute('id').toString());
+                    iDump += '{"title":"'+iTitle+'","description":"'+iDescription+'","file":"'+iFilename+'"}';
+                    if (item.childNodes.length > 4) {
+                        iDump += ',';
                     }
-                    for(var n = 3; n < unit.childNodes.length - 1; n++) { // foreach topic
-                        var topic = unit.childNodes[n];
-                        if (topic.nodeType == 1 && topic.firstChild.lastChild.value != null && topic.firstChild.lastChild.value != "") {
-                            var tTitle = topic.firstChild.lastChild.value.toString();
-                            var tDescription = topic.childNodes[2].firstChild.value.toString();
-                            var tFilename = self.uploadFile(topic.getAttribute('id').toString());
-                            uDump += '{"title":"'+tTitle+'","description":"'+tDescription+'","file":"'+tFilename+'"}';
-                            if (n < unit.childNodes.length - 2) {
-                                uDump += ',';
+                    for(var n = 3; n < item.childNodes.length - 1; n++) { // foreach topic
+                        var subitem = item.childNodes[n];
+                        if (subitem.nodeType == 1 && subitem.firstChild.lastChild.value != null && subitem.firstChild.lastChild.value != "") {
+                            var sTitle = subitem.firstChild.lastChild.value.toString();
+                            var sDescription = subitem.childNodes[2].firstChild.value.toString();
+                            var sFilename = self.uploadFile(subitem.getAttribute('id').toString());
+                            iDump += '{"title":"'+sTitle+'","description":"'+sDescription+'","file":"'+sFilename+'"}';
+                            if (n < item.childNodes.length - 2) {
+                                iDump += ',';
                             }
                         } else {
-                        // user must create a title for the Topic
+                            self.throwError('feedback', 'All Subitems must have a title');
                         }
                     }
-                    uDump += ']';
+                    iDump += ']';
                     if (i < parent.childNodes.length - 3) {
-                        uDump += ',';
+                        iDump += ',';
                     }
-                    hDump += uDump;
+                    hDump += iDump;
                 } else {
-                    // user must create a title for the Unit
+                    self.throwError('feedback', 'All Items must have a title');
                 }
             }
             hDump += '}';
@@ -414,22 +383,22 @@
         };
     
         self.createLesson = function (callback) {  // finally attempt to create lesson
-            var title = $("#title").val();
-            var description = $('#description').val();
+            var title = (useSummary) ? $("#" + titleId).val() : '';
+            var description = (useSummary) ? $('#' + descriptionId).val() : '';
             
-            if (title == '' || description == '') { // if a field is empty
-                self.throwError('feedback', '<p class="alert alert-danger squared-off">Your lesson must have a title and a description.</p>');
+            if (useSummary && (title == '' || description == '')) { // if a field is empty
+                self.throwError(feedbackId, '<p class="alert alert-danger squared-off">Your lesson must have a title and a description.</p>');
                 return;
             } else {
-                var information = self.createInformation('hierarchy');
-                self.clearError('feedback');
+                var information = self.createInformation(hierarchyId);
+                self.clearError(feedbackId);
                 // this will be used to upload lesson to the database
                 self.uploadLesson(callback, title, description, information);
             }
         };
     
         self.uploadLesson = function (url, title, description, information) {  // send AJAX request to push upload to database
-            if (ajaxStarted == ajaxFinished /*uploads are finished*/) {
+            if (ajaxStarted == ajaxFinished) {  // uploads are finished
                 $.ajax({
                     url : url, //URL to the create lesson php script
                     type : "POST",
@@ -438,7 +407,7 @@
                         titlePost: title,
                         descriptionPost: description,
                         infoPost: information,
-                        ajax: 'true'
+                        ajax: 'true' // just to prevent calling from anywhere else
                     },
                     success: function(url){
                         document.location.href = url; // URL to redirect to after upload
@@ -448,7 +417,7 @@
                     }
                 });
             } else {
-                setTimeout(function(){ self.uploadLesson(title, description, information) }, 500);
+                setTimeout(function(){ self.uploadLesson(url, title, description, information) }, 500);
             }
         };
         
