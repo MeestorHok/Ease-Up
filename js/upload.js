@@ -5,38 +5,189 @@
         
         var self = this,
             ajaxURL = '/php/upload.php',
-            useHierarchy = true,
-            hierarchyId = 'hierarchy',
-            useAccounts = true,
-            accountName = '',
-            useSummary = true,
+            useMacroInfo = true,
             titleId = 'title',
             descriptionId = 'description',
-            feedbackId = 'feedback';
+            useAccounts = true,
+            accountName = 'user',
+            useMicroInfo = true,
+            depth = 4; // depth of sub items, 0 means just top-level
         
         String.prototype.repeat = function(count) {
-            if (count < 1) return '';
-            var result = '', pattern = this.valueOf();
-            while (count > 1) {
-                if (count & 1) result += pattern;
-                count >>= 1, pattern += pattern;
+            'use strict';
+            if (this == null) {
+              throw new TypeError('can\'t convert ' + this + ' to object');
             }
-            return result + pattern;
+            var str = '' + this;
+            count = +count;
+            if (count != count) {
+              count = 0;
+            }
+            if (count < 0) {
+              throw new RangeError('repeat count must be non-negative');
+            }
+            if (count == Infinity) {
+              throw new RangeError('repeat count must be less than infinity');
+            }
+            count = Math.floor(count);
+            if (str.length == 0 || count == 0) {
+              return '';
+            }
+            // Ensuring count is a 31-bit integer allows us to heavily optimize the
+            // main part. But anyway, most current (August 2014) browsers can't handle
+            // strings 1 << 28 chars or longer, so:
+            if (str.length * count >= 1 << 28) {
+              throw new RangeError('repeat count must not overflow maximum string size');
+            }
+            var rpt = '';
+            for (;;) {
+              if ((count & 1) == 1) {
+                rpt += str;
+              }
+              count >>>= 1;
+              if (count == 0) {
+                break;
+              }
+              str += str;
+            }
+            return rpt;
         };
 
         /******************************DOM MANIPULATION********************************/
         
-        var subitem, newSubitem, item, newItem;
+        self.addItem = function (thisItem) {  // add item to parent
+            var item, newItem, subItem, itemId, newItemId, idBroken, itemNum, itemDepth, indent;
+            
+            item = thisItem.parentNode;
+            itemId = item.getAttribute('ezup-id') || '0';
+            idBroken = itemId.split('-');
+            itemNum = parseInt(idBroken.pop());
+            itemDepth = parseInt(item.getAttribute('ezup-depth')) || 0;
+            item.setAttribute('id', 'ezup-' + itemId);
+            item.innerHTML = ''; // empty the item before we add to it
+            
+            var inputsGroup = document.createElement('div');
+            inputsGroup.setAttribute('class', 'ezup-inputs-group');
+            
+            var deleteButton = document.createElement('a');
+            deleteButton.setAttribute('href', 'javascript:void(0);');
+            deleteButton.setAttribute('onclick', 'EaseUp.removeNode(\'' + itemId + '\')');
+            
+            var deleteIcon = document.createElement('i');
+            deleteIcon.setAttribute('class', 'fa fa-times text-danger');
+            
+            deleteButton.appendChild(deleteIcon);
+            inputsGroup.appendChild(deleteButton);
+            
+            var itemLabel = document.createTextNode(' Item ' + (itemNum + 1) + ': ');
+            
+            inputsGroup.appendChild(itemLabel);
+            
+            if (useMicroInfo) {
+                var itemTitle = document.createElement('input');
+                itemTitle.setAttribute('type', 'text');
+                itemTitle.setAttribute('placeholder', 'Item Name Here');
+                itemTitle.setAttribute('name', 'ezup-item-' + itemId);
+                itemTitle.setAttribute('onkeyup', 'EaseUp.displayDescription(this,\'' + itemId + '\')'); /////////////////////////////////////////////////////////////////////////
+                
+                inputsGroup.appendChild(itemTitle);
+            }
+            
+            item.appendChild(inputsGroup);
+            
+            var filesGroup = document.createElement('div');
+            filesGroup.setAttribute('class', 'ezup-files-group');
+            
+            var getFileButton = document.createElement('a');
+            getFileButton.setAttribute('href', 'javascript:void(0);');
+            getFileButton.setAttribute('onclick', 'this.lastChild.click()');
+            
+            var getFileContainer = document.createElement('div');
+            getFileContainer.setAttribute('style', 'display:inline-block');
+            
+            var getFileIcon = document.createElement('i');
+            getFileIcon.setAttribute('class', 'fa fa-plus');
+            
+            getFileContainer.appendChild(getFileIcon);
+            
+            var addFileText = document.createTextNode(' Add File');
+            
+            getFileContainer.appendChild(addFileText);
+            getFileButton.appendChild(getFileContainer);
+            
+            var fileInput = document.createElement('input');
+            fileInput.setAttribute('type', 'file');
+            fileInput.setAttribute('id', 'ezup-file-' + itemId);
+            fileInput.setAttribute('accept', 'image/x-png, image/jpeg');
+            fileInput.setAttribute('class', 'ezup-file');
+            fileInput.setAttribute('onchange', 'EaseUp.changeInputFiles(this,\'' + itemId + '\')'); /////////////////////////////////////////////////////////////////////////
+            fileInput.setAttribute('name', 'ezup-file-' + itemId);
+            fileInput.setAttribute('style', 'display:none');
+            
+            getFileButton.appendChild(fileInput);
+            filesGroup.appendChild(getFileButton);
+            
+            var feedback = document.createElement('div');
+            feedback.setAttribute('id', 'ezup-feedback-' + itemId);
+            feedback.setAttribute('class', 'ezup-feedback');
+            feedback.setAttribute('style', 'display:none');
+            
+            filesGroup.appendChild(feedback);
+            
+            var progressBar = document.createElement('div');
+            progressBar.setAttribute('style', 'display:inline-block');
+            
+            filesGroup.appendChild(progressBar);
+            item.appendChild(filesGroup);
+            
+            if (useMicroInfo) {
+                var descriptionContainer = document.createElement('div');
+                descriptionContainer.setAttribute('style', 'display:block');
+                
+                var description = document.createElement('textarea');
+                description.setAttribute('class', 'ezup-description');
+                description.setAttribute('name', 'ezup-description-' + itemId);
+                description.setAttribute('id', 'ezup-description-' + itemId);
+                description.setAttribute('placeholder', 'Write a description of this item.');
+                
+                descriptionContainer.appendChild(description);
+                item.appendChild(descriptionContainer);
+            }
+            
+            if (depth > itemDepth) {
+                newItemId = itemId + '-0';
+                subItem = document.createElement('div');
+                subItem.setAttribute('class', 'ezup-item');
+                subItem.setAttribute('ezup-id', newItemId);
+                subItem.setAttribute('ezup-depth', (itemDepth + 1));
+                subItem.setAttribute('style', 'padding-left:2em');
+                subItem.innerHTML = '<a href="javascript:void(0);" onclick="EaseUp.addItem(this)">Add Subitem</a>';
+                
+                item.appendChild(subItem);
+            }
+            
+            idBroken.push((itemNum + 1));
+            newItemId = idBroken.join('-');
+            newItem = document.createElement('div');
+            newItem.setAttribute('class', 'ezup-item');
+            newItem.setAttribute('ezup-id', newItemId);
+            newItem.setAttribute('ezup-depth', itemDepth);
+            if (itemDepth > 0) {
+                newItem.setAttribute('style', 'padding-left:2em');
+            }
+            newItem.innerHTML = '<a href="javascript:void(0);" onclick="EaseUp.addItem(this)">Add Item</a>';
+            
+            item.parentNode.appendChild(newItem);
+            //alert(item.parentNode.innerHTML);
+        };
         
-        
-        
-        self.removeNode = function (thisNode) {  // remove either a topic or a unit, based on what object calls it
-            if (confirm('Are you sure you wish to delete this?')){
-                var node = thisNode.parentNode.parentNode;
+        self.removeNode = function (nodeId) {  // remove either a topic or a unit, based on what object calls it
+            //if (confirm('Are you sure you wish to delete this?')){
+                var node = document.getElementById('ezup-' + nodeId);
                 var parent = node.parentNode;
                 parent.removeChild(node);
                 self.reNumber(parent);
-            }
+            //}
         };
     
         self.reNumber = function (parent) {  // renumbers the elements in a hierarchy after an element has been removed
@@ -79,8 +230,8 @@
             }
         };
         
-        self.displayDescription = function (thisNode, type, num) {  // show description for current unit or topic
-            var id = 'ezup-' + type + '-description-' + num;
+        self.displayDescription = function (thisNode, num) {  // show description for current unit or topic
+            var id = 'ezup-description-' + num;
             if (thisNode.value != null && thisNode.value != "") {
                 $('#' + id).css('display', 'block');
             } else {

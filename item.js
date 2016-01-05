@@ -1,11 +1,10 @@
     var EaseUp = new (function () {
         
         var self = this,
-            useUploadDescription = true,
+            useMacroInfo = true,
             titleID = 'ezup-title',
             descriptionID = 'ezup-description',
-            useEnumeration = true,
-            useItemDescriptions = true,
+            useMicroInfo = true,
             depth = 1; // depth of sub items, 0 means just top-level
 
         self.addItem = function (thisItem) {  // add item to parent
@@ -31,17 +30,19 @@
             deleteButton.appendChild(deleteIcon);
             inputsGroup.appendChild(deleteButton);
             
-            var itemLabel = document.createTextNode('Item' + (function () { if (useEnumeration) {  return (itemNum + 1) + ': ' } else {  return ': ' }})());
+            var itemLabel = document.createTextNode('Item ' + (itemNum + 1) + ': ');
             
             inputsGroup.appendChild(itemLabel);
             
-            var itemTitle = document.createElement('input');
-            itemTitle.setAttribute('type', 'text');
-            itemTitle.setAttribute('placeholder', 'Item Name Here');
-            itemTitle.setAttribute('name', 'ezup-item-' + itemId);
-            itemTitle.setAttribute('onkeyup', 'EaseUp.displayDescription(this,\'' + itemId + '\')'); /////////////////////////////////////////////////////////////////////////
-            
-            inputsGroup.appendChild(itemTitle);
+            if (useMicroInfo) {
+                var itemTitle = document.createElement('input');
+                itemTitle.setAttribute('type', 'text');
+                itemTitle.setAttribute('placeholder', 'Item Name Here');
+                itemTitle.setAttribute('name', 'ezup-item-' + itemId);
+                itemTitle.setAttribute('onkeyup', 'EaseUp.displayDescription(this,\'' + itemId + '\')'); /////////////////////////////////////////////////////////////////////////
+                
+                inputsGroup.appendChild(itemTitle);
+            }
             
             item.appendChild(inputsGroup);
             
