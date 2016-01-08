@@ -9,9 +9,8 @@
         var options = {
             uploadURL: 'php/upload.php',
             databaseUpdateURL: 'php/update-database.php',
+            callbackURL: 'php/thanks-for-uploading.php',
             useMacroInfo: true,
-            titleId: 'title',
-            descriptionId: 'description',
             useAccounts: true,
             accountName: 'user',
             useMicroInfo: true,
@@ -32,15 +31,19 @@
         /******************************DOM MANIPULATION********************************/
         
         self.addItem = function (thisItem) {  // add item to parent
-            var item, newItem, subItem, itemId, newItemId, idBroken, itemNum, itemDepth;
+            var item = thisItem.parentNode,
+                itemId = item.getAttribute('ezup-id') || '0',
+                idBroken = itemId.split('-'),
+                itemNum = parseInt(idBroken.pop()),
+                itemDepth = parseInt(item.getAttribute('ezup-depth')) || 0;
             
-            item = thisItem.parentNode;
-            itemId = item.getAttribute('ezup-id') || '0';
-            //console.log(itemId);
-            idBroken = itemId.split('-');
-            itemNum = parseInt(idBroken.pop());
-            itemDepth = parseInt(item.getAttribute('ezup-depth')) || 0;
+            if (itemId === '0') {
+                itemId = '0';
+                item.setAttribute('ezup-id', '0');
+            }
             item.innerHTML = ''; // empty the item before we add to it
+            
+            /******************************LABEL************************************/
             
             var inputsGroup = document.createElement('div');
             inputsGroup.setAttribute('class', 'ezup-inputs-group');
@@ -62,6 +65,8 @@
             
             inputsGroup.appendChild(itemLabel);
             
+            /******************************ITEM TITLE************************************/
+            
             if (options.useMicroInfo) {
                 var itemTitle = document.createElement('input');
                 itemTitle.setAttribute('type', 'text');
@@ -74,6 +79,8 @@
             }
             
             item.appendChild(inputsGroup);
+            
+            /******************************FILE SELECTION************************************/
             
             var filesGroup = document.createElement('div');
             filesGroup.setAttribute('class', 'ezup-files-group');
@@ -107,6 +114,8 @@
             getFileButton.appendChild(fileInput);
             filesGroup.appendChild(getFileButton);
             
+            /******************************ITEM FEEDBACK************************************/
+            
             var feedback = document.createElement('div');
             feedback.setAttribute('class', 'ezup-feedback');
             feedback.setAttribute('ezup-feedback', itemId);
@@ -114,12 +123,15 @@
             
             filesGroup.appendChild(feedback);
             
+            /******************************UPLOAD PROGRESS************************************/
+            
             var progressBar = document.createElement('div');
             progressBar.setAttribute('style', 'display:inline-block');
             
             filesGroup.appendChild(progressBar);
             item.appendChild(filesGroup);
             
+            /******************************DESCRIPTION************************************/
             if (options.useMicroInfo) {
                 var descriptionContainer = document.createElement('div');
                 descriptionContainer.setAttribute('style', 'display:block');
@@ -134,15 +146,16 @@
                 item.appendChild(descriptionContainer);
             }
             
+            /******************************SUB-ITEMS LIST**********************************/
+            
             var subItems = document.createElement('div');
             subItems.setAttribute('class', 'ezup-items');
             subItems.setAttribute('ezup-items', itemId);
-            subItems.setAttribute('style', 'padding-left:2em');
+            subItems.setAttribute('style', 'padding-left:2em;border-left:1px dashed #ddd');
             
-            if (options.maxDepth > itemDepth) {
-                
+            if (itemDepth < options.maxDepth) {
                 newItemId = itemId + '-0';
-                subItem = document.createElement('div');
+                var subItem = document.createElement('div');
                 subItem.setAttribute('class', 'ezup-item');
                 subItem.setAttribute('ezup-id', newItemId);
                 subItem.setAttribute('ezup-depth', (itemDepth + 1));
@@ -153,17 +166,18 @@
             
             item.appendChild(subItems);
             
-            idBroken.push((itemNum + 1).toString());
-            newItemId = idBroken.join('-');
+            /******************************NEXT ITEM BUTTON************************************/
             
-            newItem = document.createElement('div');
+            idBroken.push((itemNum + 1).toString());
+            var newItemId = idBroken.join('-');
+            
+            var newItem = document.createElement('div');
             newItem.setAttribute('class', 'ezup-item');
             newItem.setAttribute('ezup-id', newItemId);
             newItem.setAttribute('ezup-depth', itemDepth);
             newItem.innerHTML = '<a href="javascript:void(0);" onclick="EaseUp.addItem(this)">Add Item</a>';
             
             item.parentNode.appendChild(newItem);
-            //alert(document.getElementById('hierarchy').innerHTML);
         };
         
         self.removeNode = function (nodeId) {  // remove a node from its parent
@@ -256,7 +270,7 @@
             }
         };
     
-        /******************************CREATE HIERARCHY FILE SYSTEM********************************/
+        /********************************UPLOAD DATA************************************/
         
         var mustStay = false,
             errorReason = '',
@@ -269,16 +283,16 @@
             }
         };
         window.onbeforeunload = self.warnExit;
+        
+        self.roundToTwo = function (num) {  // rounds a number to two decimal places
+            return +(Math.round(num + "e+2")  + "e-2");
+        };
     
         self.formatByteSize = function (bytes) {  // format bytes into KB, MB, GB dynamically
             var sizes = ['bytes', 'KB', 'MB', 'GB'];
             if (bytes == 0) return '0 bytes';
             var i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
             return self.roundToTwo(bytes / Math.pow(1024, i)) + ' ' + sizes[i];
-        };
-        
-        self.roundToTwo = function (num) {  // rounds a number to two decimal places
-            return +(Math.round(num + "e+2")  + "e-2");
         };
 
         self.throwError = function (feedbackId, reason) {  // throws a controlled error
@@ -314,12 +328,12 @@
             fileExt = fileExt[fileExt.length - 1].toLowerCase();
             
             // get the title of the lesson
-            var title = (useMacroInfo) ? $('#' + titleId).val().toLowerCase().replace(/\s/g, "_") + '.' : '';
+            var title = (options.useMacroInfo) ? document.querySelector('[ezup-title=\'title\']').value.toLowerCase().replace(/\s/g, "_") + '.' : '';
             
             var d = new Date; // get the date of upload
             var dateTime = d.getMinutes().toString() + d.getHours().toString() + d.getDate().toString() + d.getMonth().toString() + d.getFullYear().toString();
             var rand = Math.floor(100000000 + Math.random() * 900000000);
-            var usr = (useAccounts) ? accountName + '.' : '';
+            var usr = (options.useAccounts) ? options.accountName + '.' : '';
             var newFilename = usr + title + dateTime + '.' + rand.toString() + '.' + fileExt;
             
             return newFilename.toString();
@@ -403,7 +417,7 @@
                 });
                     
                 //execute the ajax call
-                request.open('POST', uploadURL);
+                request.open('POST', options.uploadURL);
                 request.setRequestHeader('Cache-Control', 'no-cache');
                 
                 progress.setAttribute('style', 'display: block');
@@ -508,73 +522,90 @@
     
         /******************************FINISH AND PASS RESULTS********************************/
         
-        self.createInformation = function () {  // retrieve hierarchy information
-            var hDump = '{';
-            var parent = document.getElementById('ezup-items');
-            for(var i = 0; i < parent.childNodes.length - 1; i++) { // foreach unit
-                var item = parent.childNodes[i];
-                if (item.nodeType == 1 && item.firstChild.lastChild.value != null && item.firstChild.lastChild.value != "") {
-                    var thisNum = item.getAttribute('ezup-item').toString();
-                    var iDump = '"'+thisNum+'":[';
-                    var iTitle = item.firstChild.lastChild.value.toString();
-                    var iDescription = item.childNodes[2].firstChild.value.toString();
-                    var iFilename = self.uploadFile(item.getAttribute('id').toString());
-                    iDump += '{"title":"'+iTitle+'","description":"'+iDescription+'","file":"'+iFilename+'"}';
-                    if (item.childNodes.length > 4) {
-                        iDump += ',';
-                    }
-                    for(var n = 3; n < item.childNodes.length - 1; n++) { // foreach topic
-                        var subitem = item.childNodes[n];
-                        if (subitem.nodeType == 1 && subitem.firstChild.lastChild.value != null && subitem.firstChild.lastChild.value != "") {
-                            var sTitle = subitem.firstChild.lastChild.value.toString();
-                            var sDescription = subitem.childNodes[2].firstChild.value.toString();
-                            var sFilename = self.uploadFile(subitem.getAttribute('id').toString());
-                            iDump += '{"title":"'+sTitle+'","description":"'+sDescription+'","file":"'+sFilename+'"}';
-                            if (n < item.childNodes.length - 2) {
-                                iDump += ',';
-                            }
-                        } else {
-                            self.throwError('feedback', 'All Subitems must have a title');
-                        }
-                    }
-                    iDump += ']';
-                    if (i < parent.childNodes.length - 3) {
-                        iDump += ',';
-                    }
-                    hDump += iDump;
+        self.formatData = function () { // formats the information into JSON to be used by PHP
+            var json = '{',
+                parent = document.getElementById('ezup-items');
+            
+            if (parent.children.length < 2) {
+                self.throwError('feedback', '<p class="alert alert-danger">You must choose something to upload.</p>');
+                return false;
+            }
+            if (options.useAccounts) {
+                json += '"creator":"' + options.accountName + '",';
+                json += '"timestamp":"' + Math.floor(Date.now() / 1000) + '",';
+            }
+            if (options.useMacroInfo) {
+                var title = document.querySelector('[ezup-title=\'title\']').value.toString();
+                var description = document.querySelector('[ezup-description=\'description\']').value.toString();
+                
+                if (title == '' || description == '') {
+                    self.throwError('feedback', '<p class="alert alert-danger">You must include a title and a description.</p>');
+                    return false;
                 } else {
-                    self.throwError('feedback', 'All Items must have a title');
+                    json += '"title":"' + title + '",';
+                    json += '"description":"' + description + '",';
                 }
             }
-            hDump += '}';
-            return hDump.toString();
+            json += '"data":{';
+            var follow = function (parent) {
+                var i = 0,
+                    children = parent.children,
+                    results = '';
+                
+                while (i < children.length - 1) {
+                    var node = children[i],
+                        id = node.getAttribute('ezup-id'),
+                        itemDump = '"' + i.toString() + '":{';
+                    
+                    if (options.useMicroInfo) {
+                        itemDump += '"title":"' + node.querySelector('[ezup-title=\'' + id + '\']').value.toString() + '",';
+                        itemDump += '"description":"' + node.querySelector('[ezup-description=\'' + id + '\']').value.toString() + '",';
+                    }
+                    itemDump += '"file":"' + self.uploadFile(id) + '"';
+                    
+                    if (node.lastChild.children.length > 1) {
+                        itemDump += ',"children":{';
+                        itemDump += follow(node.lastChild);
+                        
+                        if (itemDump[itemDump.length - 1] == ',') {
+                            itemDump = itemDump.substring(0, itemDump.length - 1);
+                        }
+                        itemDump += '}';
+                    }
+                    itemDump += '},';
+                    
+                    results += itemDump;
+                    i++;
+                }
+                return results;
+            };
+            
+            json += follow(parent);
+            if (json[json.length - 1] == ',') {
+                json = json.substring(0, json.length - 1);
+            }
+            json += '}}';
+            return json;
         };
     
-        self.createLesson = function () {  // finally attempt to create lesson
-            var title = (options.useMacroInfo) ? $("#" + options.titleId).val() : '';
-            var description = (options.useMacroInfo) ? $('#' + options.descriptionId).val() : '';
-            
-            if (options.useMacroInfo && (title == '' || description == '')) { // if a field is empty
-                self.throwError('feedback', '<p class="alert alert-danger squared-off">Your lesson must have a title and a description.</p>');
-                return;
-            } else {
-                var information = self.createInformation();
+        self.upload = function () {  // begin upload process
+            var data = self.formatData();
+            //console.log(JSON.parse(data));
+            if (data) {
                 self.clearError('feedback');
-                // this will be used to upload lesson to the database
-                self.uploadLesson(title, description, information);
+                self.uploadToDatabase(data); // upload lesson to the database
             }
         };
     
-        self.uploadLesson = function (title, description, information) {  // send AJAX request to push upload to database
+        self.uploadToDatabase = function (data) {  // send AJAX request to push upload to database
             if (ajaxStarted == ajaxFinished) {  // uploads are finished
                 $.ajax({
                     url : options.databaseUpdateURL, //URL to the update database php script
                     type : "POST",
                     dataType: "json",
                     data: {
-                        titlePost: title,
-                        descriptionPost: description,
-                        infoPost: information,
+                        callback: options.callbackURL,
+                        data: data,
                         ajax: 'true' // just to prevent calling from anywhere else
                     },
                     success: function(url){
@@ -585,7 +616,7 @@
                     }
                 });
             } else {
-                setTimeout(function(){ self.uploadLesson(title, description, information) }, 500);
+                setTimeout(function(){ self.uploadToDatabase(data) }, 500);
             }
         };
         

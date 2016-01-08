@@ -31,15 +31,14 @@
     <body>
         <script type="text/javascript">
             EaseUp.init({
-                uploadURL: 'php/uploadmenow.php',
+                uploadURL: 'php/upload.php',
                 databaseUpdateURL: 'php/update-database.php',
+                callbackURL: 'php/thanks-for-uploading.php',
                 useMacroInfo: true,
-                titleId: 'title',
-                descriptionId: 'description',
                 useAccounts: true,
-                accountName: 'user',
+                accountName: 'username', // make this dynamic (like via PHP) to get the logged in user
                 useMicroInfo: true,
-                maxDepth: 4
+                maxDepth: 2
             });
         </script>
         <div class="view">
@@ -64,7 +63,7 @@
                         <br /><br />
                         <div id="uploaded"></div>
                         <br /><br />
-                        <button type="button" id="upload" class="btn btn-success squared-off" onclick='EaseUp.createLesson()'>Create</button>
+                        <button type="button" id="upload" class="btn btn-success squared-off" onclick='EaseUp.upload()'>Create</button>
                     </div>
                     <div class="col-md-5">
                         <div id="ezup-items">
