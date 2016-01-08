@@ -30,13 +30,23 @@
     </head>
     <body>
         <script type="text/javascript">
-            var usr = "username"; // establish username (for naming the uploads, I use php to get the logged in user and put their name here, it keeps the file system organized)
+            EaseUp.init({
+                uploadURL: 'php/uploadmenow.php',
+                databaseUpdateURL: 'php/update-database.php',
+                useMacroInfo: true,
+                titleId: 'title',
+                descriptionId: 'description',
+                useAccounts: true,
+                accountName: 'user',
+                useMicroInfo: true,
+                maxDepth: 4
+            });
         </script>
         <div class="view">
             <div class="row" style="text-align: center">
                 <div class="col-md-10 col-md-offset-1">
                     <h1>Create a New Lesson</h1>
-                    <div id="feedback" style="height: 50px;"></div>
+                    <div ezup-feedback="feedback" id="feedback" style="height: 50px;"></div>
                 </div>
             </div>
             <div class="row" style="padding-top: 50px;">
@@ -44,20 +54,20 @@
                     <div class="col-md-5 col-md-offset-1">
                         <div class="form-group">
                             <label for="title">Title</label>
-                            <input type="text" class="form-control squared-off" id="title" name="title" placeholder="Basics of Geometry" autocomplete="off">
+                            <input ezup-title="title" type="text" class="form-control squared-off" id="title" name="title" placeholder="Basics of Geometry" autocomplete="off">
                         </div>
                         <div class="form-group">
                             <label for="description">Description</label>
-                            <textarea class="form-control squared-off" id="description" name="description" placeholder="This lesson will take you through the basics of Geometry. We will cover circles, basic Trigonometry, as well as lines and curves." autocomplete="off"></textarea>
+                            <textarea ezup-description="description" class="form-control squared-off" id="description" name="description" placeholder="This lesson will take you through the basics of Geometry. We will cover circles, basic Trigonometry, as well as lines and curves." autocomplete="off"></textarea>
                         </div>
                         <div id="upload_progress"></div>
                         <br /><br />
                         <div id="uploaded"></div>
                         <br /><br />
-                        <button type="button" id="upload" class="btn btn-success squared-off" onclick='EaseUp.createLesson("php/create-lesson.php")'>Create</button>
+                        <button type="button" id="upload" class="btn btn-success squared-off" onclick='EaseUp.createLesson()'>Create</button>
                     </div>
                     <div class="col-md-5">
-                        <div id="hierarchy">
+                        <div id="ezup-items">
                             <div class="ezup-item"><a href="javascript:void(0);" onclick="EaseUp.addItem(this)">Add Item</a></div>
                         </div>
                     </div>
