@@ -7,16 +7,18 @@
             initialized = false; // this prevents the user from being able to call init from devtools. Prevents the ability to upload files that are not permitted.
             
         var options = {
-            uploadURL: 'php/EaseUp.php',
-            databaseUpdateURL: 'php/EaseUp.db.php',
-            callbackURL: 'thanks-for-uploading.html',
-            allowed: ['png', 'jpg', 'mp4'],
+            uploadURL: 'php/EaseUp.php', // used to upload individual items
+            databaseUpdateURL: 'php/EaseUp.db.php', // used to push info to database
+            callbackURL: 'thanks-for-uploading.html', // callback for once upload is finished
+            allowed: ['png', 'jpg', 'gif', 'mp4', 'avi'], // array of allowed filetypes
             maxFileSize: 16777216, // in bytes (default: 16 MB)
-            useMacroInfo: true,
-            useAccounts: true,
-            accountName: 'user',
-            useMicroInfo: true,
-            maxDepth: 4 // depth of sub items, 0 means just top-level
+            useMacroTitle: true, // title for entire upload
+            useMacroDescription: true, // description for entire upload
+            accountName: '', // dynamic account name of user
+            useMicroTitle: true, // title for individual items
+            useMicroDescription: true, // description for individual items
+            maxDepth: 4, // depth of sub items, 0 means just top-level
+            maxChildren: 4 // max number of children for each parent
         };
         
         self.init = function (args) {
@@ -31,6 +33,77 @@
         };
         
         /******************************DOM MANIPULATION********************************/
+        
+        function getMIMEtypes (types) {
+            var mimes = [];
+            for (var i = 0; i < types.length; i++) {
+                switch (types[i]) {
+                    /****************Image***************/
+                    case 'png':
+                        mimes.push('image/x-png');
+                        break;
+                    case 'jpg':
+                    case 'jpeg':
+                        mimes.push('image/jpeg');
+                        break;
+                    case 'gif':
+                        mimes.push('image/gif');
+                        break;
+                    case 'svg':
+                        mimes.push('image/svg+xml');
+                        break;
+                    case 'ico':
+                        mimes.push('image/x-icon');
+                        break;
+                        
+                    /****************Video***************/
+                    case 'flv':
+                        mimes.push('video/x-flv');
+                        break;
+                    case 'mp4':
+                        mimes.push('video/mp4');
+                        break;
+                    case '3gp':
+                        mimes.push('video/3gpp');
+                        break;
+                    case 'mov':
+                        mimes.push('video/quicktime');
+                        break;
+                    case 'avi':
+                        mimes.push('video/x-msvideo');
+                        break;
+                    case 'ogv':
+                        mimes.push('video/ogg');
+                        break;
+                    
+                    /****************Audio***************/
+                    case 'webm':
+                        mimes.push('audio/webm');
+                        break;
+                    case 'aac':
+                        mimes.push('audio/x-aac');
+                        break;
+                    case 'wma':
+                        mimes.push('audio/x-ms-wma');
+                        break;
+                    case 'wav':
+                        mimes.push('audio/x-wav');
+                        break;
+                    case 'mp3':
+                        mimes.push('audio/mp3');
+                        break;
+                        
+                    /****************Application***************/
+                    case 'pdf':
+                        mimes.push('application/pdf');
+                        break;
+                    default:
+                        break;
+                }
+            }
+            mimes.join(', ');
+            return mimes;
+        }
         
         self.addItem = function (thisItem) {  // add item to parent
             var item = thisItem.parentNode,
@@ -69,7 +142,7 @@
             
             /******************************ITEM TITLE************************************/
             
-            if (options.useMicroInfo) {
+            if (options.useMicroTitle) {
                 var itemTitle = document.createElement('input');
                 itemTitle.setAttribute('type', 'text');
                 itemTitle.setAttribute('placeholder', 'Item Title Here');
@@ -111,7 +184,7 @@
             fileInput.setAttribute('ezup-file', itemId);
             fileInput.setAttribute('name', 'ezup-file-' + itemId);
             fileInput.setAttribute('type', 'file');
-            fileInput.setAttribute('accept', 'image/x-png, image/jpeg, video/mp4');
+            fileInput.setAttribute('accept', getMIMEtypes(options.allowed));
             fileInput.setAttribute('onchange', 'EaseUp.changeInputFiles(this,\'' + itemId + '\')');
             fileInput.setAttribute('style', 'display:none');
             
@@ -138,7 +211,7 @@
             item.appendChild(filesGroup);
             
             /******************************DESCRIPTION************************************/
-            if (options.useMicroInfo) {
+            if (options.useMicroDescription) {
                 var descriptionContainer = document.createElement('div');
                 descriptionContainer.setAttribute('style', 'display:block;border-left:1px dashed #ddd');
                 
@@ -174,25 +247,25 @@
             
             /******************************NEXT ITEM BUTTON************************************/
             
-            idBroken.push((itemNum + 1).toString());
-            var newItemId = idBroken.join('-');
-            
-            var newItem = document.createElement('div');
-            newItem.setAttribute('class', 'ezup-item');
-            newItem.setAttribute('ezup-id', newItemId);
-            newItem.setAttribute('ezup-depth', itemDepth);
-            newItem.innerHTML = '<a href="javascript:void(0);" onclick="EaseUp.addItem(this)">Add Item</a>';
-            
-            item.parentNode.appendChild(newItem);
+            if (item.parentNode.children.length < options.maxChildren) {
+                idBroken.push((itemNum + 1).toString());
+                var newItemId = idBroken.join('-');
+                
+                var newItem = document.createElement('div');
+                newItem.setAttribute('class', 'ezup-item');
+                newItem.setAttribute('ezup-id', newItemId);
+                newItem.setAttribute('ezup-depth', itemDepth);
+                newItem.innerHTML = '<a href="javascript:void(0);" onclick="EaseUp.addItem(this)">Add Item</a>';
+                
+                item.parentNode.appendChild(newItem);
+            }
         };
         
         self.removeNode = function (nodeId) {  // remove a node from its parent
-            //if (confirm('Are you sure you wish to delete this?')){
-                var node = document.querySelector('[ezup-id=\'' + nodeId + '\']');
-                var parent = node.parentNode;
-                parent.removeChild(node);
-                self.reNumber();
-            //}
+            var node = document.querySelector('[ezup-id=\'' + nodeId + '\']');
+            var parent = node.parentNode;
+            parent.removeChild(node);
+            self.reNumber();
         };
     
         self.reNumber = function () {  // renumbers the elements in a hierarchy after an element has been removed
@@ -306,16 +379,16 @@
         };
         window.onbeforeunload = self.warnExit;
         
-        self.roundToTwo = function (num) {  // rounds a number to two decimal places
+        function roundToTwo (num) {  // rounds a number to two decimal places
             return +(Math.round(num + "e+2")  + "e-2");
-        };
+        }
     
-        self.formatByteSize = function (bytes) {  // format bytes into KB, MB, GB dynamically
+        function formatByteSize (bytes) {  // format bytes into KB, MB, GB dynamically
             var sizes = ['bytes', 'KB', 'MB', 'GB'];
             if (bytes == 0) return '0 bytes';
             var i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
-            return self.roundToTwo(bytes / Math.pow(1024, i)) + ' ' + sizes[i];
-        };
+            return roundToTwo(bytes / Math.pow(1024, i)) + ' ' + sizes[i];
+        }
 
         self.throwError = function (feedbackId, reason) {  // throws a controlled error
             if (arguments.length == 1) {
@@ -324,7 +397,7 @@
                 errorReason = reason; // show new error
             }
             
-            document.querySelector('[ezup-feedback=\'' + feedbackId + '\']').innerHTML = errorReason;
+            document.querySelector('[ezup-feedback=\'' + feedbackId + '\']').innerHTML = '<p class="alert alert-danger">' + errorReason.innerHTML + '</p>';
             document.querySelector('[ezup-feedback=\'' + feedbackId + '\']').style.display = 'inline-block';
         };
     
@@ -354,8 +427,8 @@
             var fileExt = file.name.split('.');
             fileExt = fileExt[fileExt.length - 1].toLowerCase();
             
-            var usr = (options.useAccounts) ? options.accountName + '.' : ''; // creator
-            var title = (options.useMacroInfo) ? document.querySelector('[ezup-title=\'title\']').value.toLowerCase().replace(/\s/g, "_") + '.' : ''; // uploads title
+            var usr = (options.accountName != '') ? options.accountName + '.' : ''; // creator
+            var title = (options.useMacroTitle) ? document.querySelector('[ezup-title=\'title\']').value.toLowerCase().replace(/\s/g, "_") + '.' : ''; // uploads title
             
             var timestamp = Math.floor(Date.now() * 1000); // timestamp
             var rand = Math.floor(100000000 + Math.random() * 900000000).toString(); // random number
@@ -393,7 +466,7 @@
                     if(e.lengthComputable){ //draw progress bar
                         
                         var percent = Math.round((e.loaded / e.total) * 100);
-                        var amount = self.formatByteSize(e.loaded).toString() + ' / ' + self.formatByteSize(e.total).toString();
+                        var amount = formatByteSize(e.loaded).toString() + ' / ' + formatByteSize(e.total).toString();
                         var container, filled, num, comparison;
                         
                         while(progress.hasChildNodes()) {
@@ -482,7 +555,7 @@
                 
                 img = document.createElement('img');
                 img.setAttribute('class', 'ezup-files-group-img');
-                img.setAttribute('title', thisFiles[0].name + ' | ' + self.formatByteSize(thisFiles[0].size));
+                img.setAttribute('title', thisFiles[0].name + ' | ' + formatByteSize(thisFiles[0].size));
                 
                 // decide whether to render an image thumbnail or video thumbnail
                 if (file_ext == 'mp4') {
@@ -531,7 +604,7 @@
                 x = document.createElement('i');
                 x.setAttribute('class', 'fa fa-times');
             
-                thisImages.appendChild(document.createTextNode(' ' + self.formatByteSize(totalSize) + ' | '));
+                thisImages.appendChild(document.createTextNode(' ' + formatByteSize(totalSize) + ' | '));
                 span.appendChild(document.createTextNode('Remove File '));
                 span.appendChild(x);
                 thisImages.appendChild(span);
@@ -559,22 +632,30 @@
                 parent = document.getElementById('ezup-items');
             
             if (parent.children.length < 2) {
-                self.throwError('feedback', '<p class="alert alert-danger">You must choose something to upload.</p>');
+                self.throwError('feedback', 'You must choose something to upload.');
                 return false;
             }
-            if (options.useAccounts) {
+            if (options.accountName != '') {
                 json += '"creator":"' + options.accountName + '",';
-                json += '"timestamp":"' + Math.floor(Date.now() / 1000) + '",';
             }
-            if (options.useMacroInfo) {
+            json += '"timestamp":"' + Math.floor(Date.now() / 1000) + '",';
+            if (options.useMacroTitle) {
                 var title = document.querySelector('[ezup-title=\'title\']').value.toString();
-                var description = document.querySelector('[ezup-description=\'description\']').value.toString();
                 
-                if (title == '' || description == '') {
-                    self.throwError('feedback', '<p class="alert alert-danger">You must include a title and a description.</p>');
+                if (title == '') {
+                    self.throwError('feedback', 'You must include a title.');
                     return false;
                 } else {
                     json += '"title":"' + title + '",';
+                }
+            }
+            if (options.useMacroDescription) {
+                var description = document.querySelector('[ezup-description=\'description\']').value.toString();
+                
+                if (description == '') {
+                    self.throwError('feedback', 'You must include a description.');
+                    return false;
+                } else {
                     json += '"description":"' + description + '",';
                 }
             }
@@ -589,10 +670,13 @@
                         id = node.getAttribute('ezup-id'),
                         itemDump = '"' + i.toString() + '":{';
                     
-                    if (options.useMicroInfo) {
+                    if (options.useMicroTitle) {
                         itemDump += '"title":"' + node.querySelector('[ezup-title=\'' + id + '\']').value.toString() + '",';
+                    }
+                    if (options.useMicroDescription) {
                         itemDump += '"description":"' + node.querySelector('[ezup-description=\'' + id + '\']').value.toString() + '",';
                     }
+                    
                     itemDump += '"file":"' + self.uploadFile(id) + '"';
                     
                     if (node.lastChild.children.length > 1) {
