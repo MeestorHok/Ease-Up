@@ -1,4 +1,4 @@
-<?php // Used only by upload pages to upload files
+<?php // Used to upload files
 
 $file = $_FILES['file'];
 $file_destination = $_POST['newFilename'];

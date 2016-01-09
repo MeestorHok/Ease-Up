@@ -8,7 +8,7 @@
         <!-- ==================== CSS ==================== -->
         
         <!-- Bootstrap CSS -->
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+        <link rel="stylesheet" href="https://bootswatch.com/cosmo/bootstrap.min.css">
         <!-- Font Awesome -->
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
         <!-- Custom Stylesheet Override -->
@@ -31,14 +31,16 @@
     <body>
         <script type="text/javascript">
             EaseUp.init({
-                uploadURL: 'php/upload.php',
-                databaseUpdateURL: 'php/update-database.php',
-                callbackURL: 'php/thanks-for-uploading.php',
-                useMacroInfo: true,
-                useAccounts: true,
+                uploadURL: 'php/EaseUp.php',
+                databaseUpdateURL: 'php/EaseUp.db.php',
+                callbackURL: 'thanks-for-uploading.html',
+                useMacroTitle: true,
+                useMacroDescription: true,
                 accountName: 'username', // make this dynamic (like via PHP) to get the logged in user
-                useMicroInfo: true,
-                maxDepth: 2
+                useMicroTitle: true,
+                useMicroDescription: true,
+                maxDepth: 2,
+                maxChildren: 4
             });
         </script>
         <div class="view">
@@ -53,17 +55,17 @@
                     <div class="col-md-5 col-md-offset-1">
                         <div class="form-group">
                             <label for="title">Title</label>
-                            <input ezup-title="title" type="text" class="form-control squared-off" id="title" name="title" placeholder="Basics of Geometry" autocomplete="off">
+                            <input ezup-title="title" type="text" class="form-control squared-off" id="title" name="title" placeholder="Title" autocomplete="off">
                         </div>
                         <div class="form-group">
                             <label for="description">Description</label>
-                            <textarea ezup-description="description" class="form-control squared-off" id="description" name="description" placeholder="This lesson will take you through the basics of Geometry. We will cover circles, basic Trigonometry, as well as lines and curves." autocomplete="off"></textarea>
+                            <textarea ezup-description="description" class="form-control squared-off" id="description" name="description" placeholder="Add a description for the upload hierarchy." autocomplete="off"></textarea>
                         </div>
                         <div id="upload_progress"></div>
                         <br /><br />
                         <div id="uploaded"></div>
                         <br /><br />
-                        <button type="button" id="upload" class="btn btn-success squared-off" onclick='EaseUp.upload()'>Create</button>
+                        <button type="button" id="upload" class="btn btn-primary squared-off" onclick='EaseUp.upload()'>Create</button>
                     </div>
                     <div class="col-md-5">
                         <div id="ezup-items">

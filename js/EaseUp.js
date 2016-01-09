@@ -7,9 +7,11 @@
             initialized = false; // this prevents the user from being able to call init from devtools. Prevents the ability to upload files that are not permitted.
             
         var options = {
-            uploadURL: 'php/upload.php',
-            databaseUpdateURL: 'php/update-database.php',
-            callbackURL: 'php/thanks-for-uploading.php',
+            uploadURL: 'php/EaseUp.php',
+            databaseUpdateURL: 'php/EaseUp.db.php',
+            callbackURL: 'thanks-for-uploading.html',
+            allowed: ['png', 'jpg', 'mp4'],
+            maxFileSize: 16777216, // in bytes (default: 16 MB)
             useMacroInfo: true,
             useAccounts: true,
             accountName: 'user',
@@ -86,6 +88,7 @@
             filesGroup.setAttribute('class', 'ezup-files-group');
             
             var getFileButton = document.createElement('a');
+            getFileButton.setAttribute('ezup-file-button', itemId);
             getFileButton.setAttribute('href', 'javascript:void(0);');
             getFileButton.setAttribute('onclick', 'this.lastChild.click()');
             
@@ -97,7 +100,8 @@
             
             getFileContainer.appendChild(getFileIcon);
             
-            var addFileText = document.createTextNode(' Add File');
+            var addFileText = document.createElement('span');
+            addFileText.innerHTML = ' Add File';
             
             getFileContainer.appendChild(addFileText);
             getFileButton.appendChild(getFileContainer);
@@ -107,7 +111,7 @@
             fileInput.setAttribute('ezup-file', itemId);
             fileInput.setAttribute('name', 'ezup-file-' + itemId);
             fileInput.setAttribute('type', 'file');
-            fileInput.setAttribute('accept', 'image/x-png, image/jpeg');
+            fileInput.setAttribute('accept', 'image/x-png, image/jpeg, video/mp4');
             fileInput.setAttribute('onchange', 'EaseUp.changeInputFiles(this,\'' + itemId + '\')');
             fileInput.setAttribute('style', 'display:none');
             
@@ -125,16 +129,18 @@
             
             /******************************UPLOAD PROGRESS************************************/
             
-            var progressBar = document.createElement('div');
-            progressBar.setAttribute('style', 'display:inline-block');
+            var thumbnails = document.createElement('div');
+            thumbnails.setAttribute('ezup-thumbs', itemId);
+            thumbnails.setAttribute('style', 'display:inline-block');
             
-            filesGroup.appendChild(progressBar);
+            filesGroup.appendChild(thumbnails);
+            
             item.appendChild(filesGroup);
             
             /******************************DESCRIPTION************************************/
             if (options.useMicroInfo) {
                 var descriptionContainer = document.createElement('div');
-                descriptionContainer.setAttribute('style', 'display:block');
+                descriptionContainer.setAttribute('style', 'display:block;border-left:1px dashed #ddd');
                 
                 var description = document.createElement('textarea');
                 description.setAttribute('class', 'ezup-description');
@@ -249,6 +255,22 @@
                         feedback.setAttribute('ezup-feedback', newId);
                     }
                     
+                    var filesBtn = node.querySelector('[ezup-file-button=\'' + oldId + '\']');
+                    if (filesBtn) { // check if this exists
+                        filesBtn.setAttribute('ezup-file-button', newId);
+                    }
+                    
+                    var filesDelBtn = node.querySelector('[ezup-file-delete-button=\'' + oldId + '\']');
+                    if (filesDelBtn) { // check if this exists
+                        filesDelBtn.setAttribute('ezup-file-delete-button', newId);
+                        filesDelBtn.setAttribute('onclick', 'EaseUp.clearFiles(\'' + newId + '\')');
+                    }
+                    
+                    var thumbs = node.querySelector('[ezup-thumbs=\'' + oldId + '\']');
+                    if (thumbs) { // check if this exists
+                        thumbs.setAttribute('ezup-thumbs', newId);
+                    }
+                    
                     var subitems = node.lastChild;
                     subitems.setAttribute('ezup-items', newId);
                     
@@ -311,15 +333,20 @@
             document.querySelector('[ezup-feedback=\'' + feedbackId + '\']').style.display = 'none';
         };
         
-        self.clearFiles = function (thisInput, feedbackID) {  // clear files to be uploaded
-            self.clearError(feedbackID);
-            var thisImages = document.getElementById(thisInput).parentNode.parentNode.lastChild;
+        self.clearFiles = function (thisId) {  // clear files to be uploaded
+            self.clearError(thisId);
+            var thisImages = document.querySelector('[ezup-thumbs=\'' + thisId + '\']');
+            var file = document.querySelector('[ezup-file=\'' + thisId + '\']');
+            var button = document.querySelector('[ezup-file-button=\'' + thisId + '\']');
             
             while(thisImages.hasChildNodes()) { // empty drawn files
                 thisImages.removeChild(thisImages.lastChild);
             }
-            document.getElementById(thisInput).parentNode.parentNode.firstChild.firstChild.innerHTML = '<i class="fa fa-plus"></i> Add File';
-            $('#' + thisInput).replaceWith($('#' + thisInput).val('').clone(true)); //refresh file selector
+            button.innerHTML = '<i class="fa fa-plus"></i><span> Add File</span>';
+            
+            //refresh file selector
+            file.value = '';
+            button.appendChild(file);
         };
         
         self.renameFile = function (file) {  // rename a file
@@ -327,33 +354,32 @@
             var fileExt = file.name.split('.');
             fileExt = fileExt[fileExt.length - 1].toLowerCase();
             
-            // get the title of the lesson
-            var title = (options.useMacroInfo) ? document.querySelector('[ezup-title=\'title\']').value.toLowerCase().replace(/\s/g, "_") + '.' : '';
+            var usr = (options.useAccounts) ? options.accountName + '.' : ''; // creator
+            var title = (options.useMacroInfo) ? document.querySelector('[ezup-title=\'title\']').value.toLowerCase().replace(/\s/g, "_") + '.' : ''; // uploads title
             
-            var d = new Date; // get the date of upload
-            var dateTime = d.getMinutes().toString() + d.getHours().toString() + d.getDate().toString() + d.getMonth().toString() + d.getFullYear().toString();
-            var rand = Math.floor(100000000 + Math.random() * 900000000);
-            var usr = (options.useAccounts) ? options.accountName + '.' : '';
-            var newFilename = usr + title + dateTime + '.' + rand.toString() + '.' + fileExt;
+            var timestamp = Math.floor(Date.now() * 1000); // timestamp
+            var rand = Math.floor(100000000 + Math.random() * 900000000).toString(); // random number
+            var newFilename = usr + title + timestamp + '.' + rand + '.' + fileExt;
             
-            return newFilename.toString();
+            return newFilename;
         };
             
-        self.uploadFile = function (parentID) {  // if user clicks upload button
-            var file = document.getElementById('ezup-file-'+parentID).files[0];
-            var feedbackID = 'ezup-feedback-' + parentID;
-            var newFilename = '';
+        self.uploadFile = function (id) {  // upload an individual file
+            var file = document.querySelector('[ezup-file=\'' + id + '\']').files[0],
+                feedback = document.querySelector('[ezup-feedback=\'' + id + '\']'),
+                newFilename = '';
+                
             // error handling variables
-            var fileTypeCheck = document.getElementById(feedbackID).getAttribute('ftc');
-            var fileSizeCheck = document.getElementById(feedbackID).getAttribute('fsc');
+            var fileTypeCheck = feedback.getAttribute('ftc');
+            var fileSizeCheck = feedback.getAttribute('fsc');
     
             if (fileSizeCheck == 'true' && fileTypeCheck == 'true') { // if error handling is good
                 mustStay = true;
-                self.clearError(feedbackID);
+                self.clearError(id);
                 ajaxStarted += 1;
                 // rename file
                 newFilename = 'uploads/' + self.renameFile(file);
-                var progress = document.getElementById(parentID).childNodes[1];
+                var progress = feedback.parentElement;
                 // create ajax call
                 var request = new XMLHttpRequest();
                 var data = new FormData();
@@ -361,11 +387,11 @@
                 data.append('ajax', 'true');
                 data.append('file', file);
                 data.append('newFilename', newFilename);
-    
+                
                 // called every few milliseconds, used to draw progress bar
                 request.upload.addEventListener('progress', function(e){
                     if(e.lengthComputable){ //draw progress bar
-        
+                        
                         var percent = Math.round((e.loaded / e.total) * 100);
                         var amount = self.formatByteSize(e.loaded).toString() + ' / ' + self.formatByteSize(e.total).toString();
                         var container, filled, num, comparison;
@@ -398,7 +424,7 @@
                     
                 // just error handling on the server's end
                 request.upload.addEventListener('error', function(e){
-                    self.throwError(feedbackID, 'Error: ' + e);
+                    self.throwError(id, 'Error: ' + e);
                 });
             
                 // used to finish and cancel upload
@@ -410,7 +436,7 @@
                             progress.innerHTML = '<a href="'+ newFilename +'" target="_blank">Uploaded File!</a>';
                             ajaxFinished += 1;
                         } else { // if upload was cancelled
-                            self.throwError(feedbackID, 'Upload failed and I don\'t know why! Please let us know about this.');
+                            self.throwError(id, 'Upload failed and I don\'t know why! Please let us know about this.');
                             mustStay = false;
                         }
                     }
@@ -427,32 +453,34 @@
             }
             return newFilename;
         };
-    
-        self.changeInputFiles = function (thisInput, thisNum) {  // if a file is selected or deselected
+        
+        self.changeInputFiles = function (thisInput, thisId) {  // if a file is selected or deselected
             var thisFiles = thisInput.files,
                 fileTypeCheck = false,
                 fileSizeCheck = false,
-                thisID = thisInput.getAttribute('id').toString(),
-                thisFeedbackID = thisInput.parentNode.parentNode.childNodes[1].getAttribute('id').toString(),
-                thisImages = thisInput.parentNode.parentNode.lastChild, // parent to draw thumbnails into
-                id, img, span, x;
-        
+                thisImages = document.querySelector('[ezup-thumbs=\'' + thisId + '\']'), // parent to draw thumbnails into
+                file = document.querySelector('[ezup-file=\'' + thisId + '\']'),
+                button = document.querySelector('[ezup-file-button=\'' + thisId + '\']'),
+                img, span, x;
+            
+            if (thisFiles.length < 1) {
+                self.clearFiles(thisId);
+                return;
+            }
+            
             while(thisImages.hasChildNodes()) { //empty drawn files
                 thisImages.removeChild(thisImages.firstChild);
             }
             
             var totalSize = thisFiles[0].size;
-            var allowed = ['png', 'jpg', 'mp4'];
             
             // draw selected files
             var file_ext = thisFiles[0].name.split('.')[thisFiles[0].name.split('.').length - 1].toLowerCase();
-            id = 'ezup-thumb-' + thisNum + '-' + 0;
             
-            if ($.inArray(file_ext, allowed) !== -1) {
+            if (options.allowed.indexOf(file_ext) !== -1) {
                 fileTypeCheck = true;
                 
                 img = document.createElement('img');
-                img.setAttribute('id', id);
                 img.setAttribute('class', 'ezup-files-group-img');
                 img.setAttribute('title', thisFiles[0].name + ' | ' + self.formatByteSize(thisFiles[0].size));
                 
@@ -484,19 +512,21 @@
                     };
                     reader.readAsDataURL(thisFiles[0]);
                 }
+                
                 thisImages.appendChild(img);
             } else { // if filetype is not allowed
                 fileTypeCheck = false;
-                self.throwError(thisFeedbackID, 'That filetype is not allowed.');
+                self.throwError(thisId, 'That filetype is not allowed.');
             }
             
             if (thisFiles.length > 0) { // draw the clear files button
-                thisInput.parentNode.parentNode.firstChild.firstChild.innerHTML = 'Change File';
+                button.innerHTML = '<i class="fa fa-refresh"></i> <span>Change File</span>';
+                button.appendChild(file);
                 
                 span = document.createElement('span');
-                span.setAttribute('id', thisID + '-cancel');
                 span.setAttribute('class', 'pointer text-danger');
-                span.setAttribute('onclick', 'EaseUp.clearFiles(\'' + thisID + '\', \'' + thisFeedbackID + '\')');
+                span.setAttribute('ezup-file-delete-button', thisId);
+                span.setAttribute('onclick', 'EaseUp.clearFiles(\'' + thisId + '\')');
                 
                 x = document.createElement('i');
                 x.setAttribute('class', 'fa fa-times');
@@ -506,18 +536,20 @@
                 span.appendChild(x);
                 thisImages.appendChild(span);
             } else {
-                thisInput.parentNode.parentNode.firstChild.firstChild.innerHTML = '<i class="fa fa-plus"></i> Add File';
+                button.innerHTML = '<i class="fa fa-plus"></i> <span>Add File</span>';
+                button.appendChild(file);
             }
             
-            if (totalSize > 16000000) { // if file size is too large
+            if (totalSize > options.maxFileSize) { // if file size is too large
                 fileSizeCheck = false;
-                self.throwError(thisFeedbackID, 'File size is too large.');
+                self.throwError(thisId, 'File size is too large.');
             } else {
                 fileSizeCheck = true;
             }
             
-            $('#'+thisFeedbackID).attr('ftc', fileTypeCheck);
-            $('#'+thisFeedbackID).attr('fsc', fileSizeCheck);
+            var feedback = document.querySelector('[ezup-feedback=\'' + thisId + '\']');
+            feedback.setAttribute('ftc', fileTypeCheck);
+            feedback.setAttribute('fsc', fileSizeCheck);
         };
     
         /******************************FINISH AND PASS RESULTS********************************/
@@ -590,7 +622,7 @@
     
         self.upload = function () {  // begin upload process
             var data = self.formatData();
-            //console.log(JSON.parse(data));
+            console.log(JSON.parse(data));
             if (data) {
                 self.clearError('feedback');
                 self.uploadToDatabase(data); // upload lesson to the database
@@ -611,8 +643,9 @@
                     success: function(url){
                         document.location.href = url; // URL to redirect to after upload
                     },
-                    error: function(){
-                        alert('Oops, there has been a problem! Please tell us about this so that we can figure out what went wrong.');
+                    error: function(error){
+                        console.log(error.responseText);
+                        //alert('Oops, there has been a problem! Please tell us about this so that we can figure out what went wrong.');
                     }
                 });
             } else {
