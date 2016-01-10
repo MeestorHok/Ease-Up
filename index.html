@@ -31,28 +31,34 @@
     <body>
         <script type="text/javascript">
             EaseUp.init({
-                uploadURL: 'php/EaseUp.php',
-                databaseUpdateURL: 'php/EaseUp.db.php',
-                callbackURL: 'thanks-for-uploading.html',
-                useMacroTitle: true,
-                useMacroDescription: true,
-                accountName: 'username', // make this dynamic (like via PHP) to get the logged in user
-                useMicroTitle: true,
-                useMicroDescription: true,
-                maxDepth: 2,
-                maxChildren: 4
-            });
+                uploadUrl: 'php/EaseUp.php',
+                updateUrl: 'php/EaseUp.db.php',
+                callback: 'thanks-for-uploading.html',
+                allowed: ['png', 'jpg', 'jpeg', 'gif', 'mp4', 'avi'],
+                maxFilesize: 16777216, // in bytes (default: 16 MB)
+                title: false,
+                description: false,
+                accountName: '',
+                titles: true,
+                detailsType: 'description',
+                maxDepth: 0,
+                maxChildren: 10
+        });
         </script>
-        <div class="view">
+        <div class="container">
             <div class="row" style="text-align: center">
                 <div class="col-md-10 col-md-offset-1">
                     <h1>Create a New Lesson</h1>
-                    <div ezup-feedback="feedback" id="feedback" style="height: 50px;"></div>
+                    <div id="ezup-feedback" style="height: 50px;"></div>
                 </div>
             </div>
             <div class="row" style="padding-top: 50px;">
                 <form action="" method="post" enctype="multipart/form-data">
-                    <div class="col-md-5 col-md-offset-1">
+                    <div class="col-md-12 col-md-offset-1">
+                        <div id="ezup-items">
+                            <div class="ezup-item"><a href="javascript:void(0);" onclick="EaseUp.addItem(this)"><i class="fa fa-plus"></i> Add Item</a></div>
+                        </div>
+                        <!--
                         <div class="form-group">
                             <label for="title">Title</label>
                             <input ezup-title="title" type="text" class="form-control squared-off" id="title" name="title" placeholder="Title" autocomplete="off">
@@ -61,16 +67,9 @@
                             <label for="description">Description</label>
                             <textarea ezup-description="description" class="form-control squared-off" id="description" name="description" placeholder="Add a description for the upload hierarchy." autocomplete="off"></textarea>
                         </div>
-                        <div id="upload_progress"></div>
+                        -->
                         <br /><br />
-                        <div id="uploaded"></div>
-                        <br /><br />
-                        <button type="button" id="upload" class="btn btn-primary squared-off" onclick='EaseUp.upload()'>Create</button>
-                    </div>
-                    <div class="col-md-5">
-                        <div id="ezup-items">
-                            <div class="ezup-item"><a href="javascript:void(0);" onclick="EaseUp.addItem(this)">Add Item</a></div>
-                        </div>
+                        <button type="button" id="upload" class="btn btn-primary squared-off" onclick='EaseUp.upload()'><i class="fa fa-upload"></i> Upload</button>
                     </div>
                 </form>
             </div>

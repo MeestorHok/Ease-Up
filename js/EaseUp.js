@@ -7,16 +7,17 @@
             initialized = false; // this prevents the user from being able to call init from devtools. Prevents the ability to upload files that are not permitted.
             
         var options = {
-            uploadURL: 'php/EaseUp.php', // used to upload individual items
-            databaseUpdateURL: 'php/EaseUp.db.php', // used to push info to database
-            callbackURL: 'thanks-for-uploading.html', // callback for once upload is finished
-            allowed: ['png', 'jpg', 'gif', 'mp4', 'avi'], // array of allowed filetypes
-            maxFileSize: 16777216, // in bytes (default: 16 MB)
-            useMacroTitle: true, // title for entire upload
-            useMacroDescription: true, // description for entire upload
+            uploadUrl: 'EaseUp.php', // used to upload individual items
+            updateUrl: 'EaseUp.db.php', // used to push info to database
+            callback: 'thanks-for-uploading.html', // callback for once upload is finished
+            allowed: ['png', 'jpg', 'jpeg'], // array of allowed filetypes
+            maxFilesize: 16777216, // in bytes (default: 16 MB)
+            title: false, // title for entire upload
+            description: false, // description for entire upload
             accountName: '', // dynamic account name of user
-            useMicroTitle: true, // title for individual items
-            useMicroDescription: true, // description for individual items
+            
+            titles: false, // title for individual items
+            detailsType: '', // details for individual items, possibilities are 'description', 'checklist', 'radio'
             maxDepth: 4, // depth of sub items, 0 means just top-level
             maxChildren: 4 // max number of children for each parent
         };
@@ -121,7 +122,7 @@
             /******************************LABEL************************************/
             
             var inputsGroup = document.createElement('div');
-            inputsGroup.setAttribute('class', 'ezup-inputs-group');
+            inputsGroup.setAttribute('class', 'form-group ezup-inputs-group');
             
             var deleteButton = document.createElement('a');
             deleteButton.setAttribute('ezup-delete', itemId);
@@ -134,7 +135,9 @@
             deleteButton.appendChild(deleteIcon);
             inputsGroup.appendChild(deleteButton);
             
-            var itemLabel = document.createElement('span');
+            var itemLabel = document.createElement('label');
+            itemLabel.setAttribute('for', 'ezup-title-' + itemId);
+            itemLabel.setAttribute('class', 'control-label');
             itemLabel.setAttribute('ezup-label', itemId);
             itemLabel.innerHTML = ' Item ' + (itemNum + 1) + ': ';
             
@@ -142,9 +145,10 @@
             
             /******************************ITEM TITLE************************************/
             
-            if (options.useMicroTitle) {
+            if (options.titles) {
                 var itemTitle = document.createElement('input');
                 itemTitle.setAttribute('type', 'text');
+                itemTitle.setAttribute('class', 'form-control input-sm');
                 itemTitle.setAttribute('placeholder', 'Item Title Here');
                 itemTitle.setAttribute('name', 'ezup-title-' + itemId);
                 itemTitle.setAttribute('ezup-title', itemId);
@@ -211,18 +215,23 @@
             item.appendChild(filesGroup);
             
             /******************************DESCRIPTION************************************/
-            if (options.useMicroDescription) {
+            if (options.detailsType === 'description') {
                 var descriptionContainer = document.createElement('div');
+                descriptionContainer.setAttribute('class', 'form-group');
                 descriptionContainer.setAttribute('style', 'display:block;border-left:1px dashed #ddd');
                 
                 var description = document.createElement('textarea');
-                description.setAttribute('class', 'ezup-description');
+                description.setAttribute('class', 'form-control ezup-description');
                 description.setAttribute('ezup-description', itemId);
                 description.setAttribute('name', 'ezup-description-' + itemId);
                 description.setAttribute('placeholder', 'Write a description of this item.');
                 
                 descriptionContainer.appendChild(description);
                 item.appendChild(descriptionContainer);
+            } else if (options.detailsType === 'checklist') {
+                // add checklist
+            } else if (options.detailsType === 'radiolist') {
+                // add radio list
             }
             
             /******************************SUB-ITEMS LIST**********************************/
@@ -238,7 +247,7 @@
                 subItem.setAttribute('class', 'ezup-item');
                 subItem.setAttribute('ezup-id', newItemId);
                 subItem.setAttribute('ezup-depth', (itemDepth + 1));
-                subItem.innerHTML = '<a href="javascript:void(0);" onclick="EaseUp.addItem(this)">Add Subitem</a>';
+                subItem.innerHTML = '<a href="javascript:void(0);" onclick="EaseUp.addItem(this)"><i class="fa fa-plus"></i> Add Item</a>';
                 
                 subItems.appendChild(subItem);
             }
@@ -255,7 +264,7 @@
                 newItem.setAttribute('class', 'ezup-item');
                 newItem.setAttribute('ezup-id', newItemId);
                 newItem.setAttribute('ezup-depth', itemDepth);
-                newItem.innerHTML = '<a href="javascript:void(0);" onclick="EaseUp.addItem(this)">Add Item</a>';
+                newItem.innerHTML = '<a href="javascript:void(0);" onclick="EaseUp.addItem(this)"><i class="fa fa-plus"></i> Add Item</a>';
                 
                 item.parentNode.appendChild(newItem);
             }
@@ -265,6 +274,17 @@
             var node = document.querySelector('[ezup-id=\'' + nodeId + '\']');
             var parent = node.parentNode;
             parent.removeChild(node);
+            
+            if (parent.lastChild.children.length > 1) { // if there is no add item button,
+                if (parent.children.length < options.maxChildren) { // if we can add an add item button
+                    var newItem = document.createElement('div');
+                    newItem.setAttribute('class', 'ezup-item');
+                    newItem.setAttribute('ezup-depth', (parent.getAttribute('ezup-depth') || '0'));
+                    newItem.innerHTML = '<a href="javascript:void(0);" onclick="EaseUp.addItem(this)"><i class="fa fa-plus"></i> Add Item</a>';
+                    
+                    parent.appendChild(newItem);
+                }
+            }
             self.reNumber();
         };
     
@@ -303,20 +323,20 @@
                         label.innerHTML = ' Item ' + (i + 1) + ': ';
                     }
                     
-                    var title = node.querySelector('[ezup-title=\'' + oldId + '\']');
+                    var title = node.querySelector('input[ezup-title=\'' + oldId + '\']');
                     if (title) { // check if this exists
                         title.setAttribute('ezup-title', newId);
                         title.setAttribute('name', 'ezup-title-' + newId);
                         title.setAttribute('onkeyup', 'EaseUp.displayDescription(this,\'' + newId + '\')');
                     }
                     
-                    var description = node.querySelector('[ezup-description=\'' + oldId + '\']');
+                    var description = node.querySelector('input[ezup-description=\'' + oldId + '\']');
                     if (description) { // check if this exists
                         description.setAttribute('ezup-description', newId);
                         description.setAttribute('name', 'ezup-description-' + newId);
                     }
                     
-                    var file = node.querySelector('[ezup-file=\'' + oldId + '\']');
+                    var file = node.querySelector('input[ezup-file=\'' + oldId + '\']');
                     if (file) { // check if this exists
                         file.setAttribute('ezup-file', newId);
                         file.setAttribute('name', 'ezup-file-' + newId);
@@ -345,11 +365,13 @@
                     }
                     
                     var subitems = node.lastChild;
-                    subitems.setAttribute('ezup-items', newId);
-                    
-                    if (subitems.children.length > 0) {
-                        follow(subitems);
+                    if (subitems) { // check if this exists
+                        subitems.setAttribute('ezup-items', newId);
+                        if (subitems.children.length > 0) {
+                            follow(subitems);
+                        }
                     }
+                    
                     i++;
                 }
             };
@@ -368,7 +390,6 @@
         /********************************UPLOAD DATA************************************/
         
         var mustStay = false,
-            errorReason = '',
             ajaxStarted = 0,
             ajaxFinished = 0;
     
@@ -390,20 +411,67 @@
             return roundToTwo(bytes / Math.pow(1024, i)) + ' ' + sizes[i];
         }
 
-        self.throwError = function (feedbackId, reason) {  // throws a controlled error
-            if (arguments.length == 1) {
-                errorReason = errorReason; // show the most recent error
-            } else {
-                errorReason = reason; // show new error
-            }
-            
-            document.querySelector('[ezup-feedback=\'' + feedbackId + '\']').innerHTML = '<p class="alert alert-danger">' + errorReason.innerHTML + '</p>';
-            document.querySelector('[ezup-feedback=\'' + feedbackId + '\']').style.display = 'inline-block';
+        self.throwError = function (reason) {  // throws a controlled error
+            document.getElementById('ezup-feedback').innerHTML = '<p class="alert alert-warning">' + reason + '</p>';
+            document.getElementById('ezup-feedback').style.display = 'inline-block';
         };
     
-        self.clearError = function (feedbackId) {  // clear error
-            document.querySelector('[ezup-feedback=\'' + feedbackId + '\']').innerHTML = errorReason;
-            document.querySelector('[ezup-feedback=\'' + feedbackId + '\']').style.display = 'none';
+        self.clearError = function () {  // clear error
+            document.getElementById('ezup-feedback').innerHTML = '';
+            document.getElementById('ezup-feedback').style.display = 'none';
+        };
+        
+        self.checkErrors = function () {
+            if (document.getElementById('ezup-items').children.length == 1) { // if no items exist
+                self.throwError('You must choose something to upload.');
+                return false;
+            }
+            if (options.title) { // if title is necessary
+                var title = document.querySelector('input[ezup-title=\'title\']');
+                if (title.value.toString() != '') { // if title is empty
+                    self.throwError('You must include a title.');
+                    title.parentElement.className += ' has-warning';
+                    return false;
+                }
+            }
+            if (options.description) { // if description is necessary
+                var description = document.querySelector('[ezup-description=\'description\']');
+                if (description.value.toString() == '') { // if description is empty
+                    self.throwError('You must include a description.');
+                    description.parentElement.className += ' has-warning';
+                    return false;
+                }
+            }
+            
+            var items = document.querySelectorAll('div[ezup-id]');
+            for (var i = 0; i < items.length; i++) { // for each item
+                var item = items[i],
+                    id = item.getAttribute('ezup-id'),
+                    files = item.querySelector('input[ezup-file=\'' + id + '\']').files;
+                
+                if (files.length < 1) { // if there no files are selected
+                    self.throwError('All items must include a file.');
+                    return false;
+                }
+                
+                if (options.titles) { // if item titles are required
+                    if (item.querySelector('input[ezup-title=\'' + id + '\']').value.toString() == '') { // if item title is empty
+                        self.throwError('All items must have a title.');
+                        item.querySelector('div.form-group').className += ' has-warning';
+                        return false;
+                    }
+                }
+                
+                if (options.detailsType === 'description') { // if description is necessary
+                    if (item.querySelector('[ezup-description=\'' + id + '\']').value.toString() == '') { // if description is empty
+                        self.throwError('All items must have a description.');
+                        item.querySelector('div.form-group').className += ' has-warning';
+                        return false;
+                    }
+                }
+            }
+            
+            return true;
         };
         
         self.clearFiles = function (thisId) {  // clear files to be uploaded
@@ -428,7 +496,7 @@
             fileExt = fileExt[fileExt.length - 1].toLowerCase();
             
             var usr = (options.accountName != '') ? options.accountName + '.' : ''; // creator
-            var title = (options.useMacroTitle) ? document.querySelector('[ezup-title=\'title\']').value.toLowerCase().replace(/\s/g, "_") + '.' : ''; // uploads title
+            var title = (options.title) ? document.querySelector('[ezup-title=\'title\']').value.toLowerCase().replace(/\s/g, "_") + '.' : ''; // uploads title
             
             var timestamp = Math.floor(Date.now() * 1000); // timestamp
             var rand = Math.floor(100000000 + Math.random() * 900000000).toString(); // random number
@@ -497,7 +565,7 @@
                     
                 // just error handling on the server's end
                 request.upload.addEventListener('error', function(e){
-                    self.throwError(id, 'Error: ' + e);
+                    self.throwError('Error: ' + e);
                 });
             
                 // used to finish and cancel upload
@@ -509,14 +577,14 @@
                             progress.innerHTML = '<a href="'+ newFilename +'" target="_blank">Uploaded File!</a>';
                             ajaxFinished += 1;
                         } else { // if upload was cancelled
-                            self.throwError(id, 'Upload failed and I don\'t know why! Please let us know about this.');
+                            self.throwError('Upload failed and I don\'t know why! Please let us know about this.');
                             mustStay = false;
                         }
                     }
                 });
                     
                 //execute the ajax call
-                request.open('POST', options.uploadURL);
+                request.open('POST', options.uploadUrl, true);
                 request.setRequestHeader('Cache-Control', 'no-cache');
                 
                 progress.setAttribute('style', 'display: block');
@@ -558,7 +626,7 @@
                 img.setAttribute('title', thisFiles[0].name + ' | ' + formatByteSize(thisFiles[0].size));
                 
                 // decide whether to render an image thumbnail or video thumbnail
-                if (file_ext == 'mp4') {
+                if (file_ext == 'mp4') { // render video thumbnail
                     var video = document.createElement('video');
                     var readerV = new FileReader();
                     readerV.onload = function (e) {
@@ -578,7 +646,7 @@
                     };
                     video.remove();
                     canvas.remove();
-                } else {
+                } else { // render image
                     var reader = new FileReader();
                     reader.onload = function (e) {
                         img.setAttribute('src', e.target.result);
@@ -589,7 +657,7 @@
                 thisImages.appendChild(img);
             } else { // if filetype is not allowed
                 fileTypeCheck = false;
-                self.throwError(thisId, 'That filetype is not allowed.');
+                self.throwError('That filetype is not allowed.');
             }
             
             if (thisFiles.length > 0) { // draw the clear files button
@@ -615,7 +683,7 @@
             
             if (totalSize > options.maxFileSize) { // if file size is too large
                 fileSizeCheck = false;
-                self.throwError(thisId, 'File size is too large.');
+                self.throwError('File size is too large.');
             } else {
                 fileSizeCheck = true;
             }
@@ -631,34 +699,22 @@
             var json = '{',
                 parent = document.getElementById('ezup-items');
             
-            if (parent.children.length < 2) {
-                self.throwError('feedback', 'You must choose something to upload.');
-                return false;
-            }
             if (options.accountName != '') {
                 json += '"creator":"' + options.accountName + '",';
             }
-            json += '"timestamp":"' + Math.floor(Date.now() / 1000) + '",';
-            if (options.useMacroTitle) {
+            
+            json += '"timestamp":"' + Math.floor(Date.now() / 1000) + '",'; // UNIX timestamp
+             
+            if (options.title) {
                 var title = document.querySelector('[ezup-title=\'title\']').value.toString();
-                
-                if (title == '') {
-                    self.throwError('feedback', 'You must include a title.');
-                    return false;
-                } else {
-                    json += '"title":"' + title + '",';
-                }
+                json += '"title":"' + title + '",';
             }
-            if (options.useMacroDescription) {
+            
+            if (options.description) {
                 var description = document.querySelector('[ezup-description=\'description\']').value.toString();
-                
-                if (description == '') {
-                    self.throwError('feedback', 'You must include a description.');
-                    return false;
-                } else {
-                    json += '"description":"' + description + '",';
-                }
+                json += '"description":"' + description + '",';
             }
+            
             json += '"data":{';
             var follow = function (parent) {
                 var i = 0,
@@ -670,10 +726,10 @@
                         id = node.getAttribute('ezup-id'),
                         itemDump = '"' + i.toString() + '":{';
                     
-                    if (options.useMicroTitle) {
+                    if (options.titles) {
                         itemDump += '"title":"' + node.querySelector('[ezup-title=\'' + id + '\']').value.toString() + '",';
                     }
-                    if (options.useMicroDescription) {
+                    if (options.detailsType === 'description') {
                         itemDump += '"description":"' + node.querySelector('[ezup-description=\'' + id + '\']').value.toString() + '",';
                     }
                     
@@ -705,35 +761,37 @@
         };
     
         self.upload = function () {  // begin upload process
-            var data = self.formatData();
-            console.log(JSON.parse(data));
-            if (data) {
+            if(self.checkErrors()) { // if all errors pass
                 self.clearError('feedback');
-                self.uploadToDatabase(data); // upload lesson to the database
+                var data = self.formatData(); // JSON formatting of data
+                self.uploadToDatabase(data); // update the database
             }
         };
     
-        self.uploadToDatabase = function (data) {  // send AJAX request to push upload to database
+        self.uploadToDatabase = function (JSONdata) {  // send AJAX request to push upload to database
             if (ajaxStarted == ajaxFinished) {  // uploads are finished
-                $.ajax({
-                    url : options.databaseUpdateURL, //URL to the update database php script
-                    type : "POST",
-                    dataType: "json",
-                    data: {
-                        callback: options.callbackURL,
-                        data: data,
-                        ajax: 'true' // just to prevent calling from anywhere else
-                    },
-                    success: function(url){
-                        document.location.href = url; // URL to redirect to after upload
-                    },
-                    error: function(error){
-                        console.log(error.responseText);
-                        //alert('Oops, there has been a problem! Please tell us about this so that we can figure out what went wrong.');
+                var request = new XMLHttpRequest();
+                var data = new FormData();
+                
+                data.append('ajax', 'true');
+                data.append('callback', options.callback);
+                data.append('data', JSONdata);
+                
+                request.onload = function() {
+                    if (request.status >= 200 && request.status < 400) { // Success!
+                        document.location.href = request.responseText;
                     }
-                });
+                };
+                
+                request.onerror = function(error) {
+                    alert('Oops, there has been a problem! Error: ' + error.responseText);
+                };
+                
+                request.open('POST', options.updateUrl, true);
+                request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+                request.send(data);
             } else {
-                setTimeout(function(){ self.uploadToDatabase(data) }, 500);
+                setTimeout(function(){ self.uploadToDatabase(JSONdata) }, 500);
             }
         };
         
