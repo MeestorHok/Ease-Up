@@ -1,0 +1,62 @@
+#ezup-items {
+    text-align: center;
+}
+.ezup-item {
+    display: inline-block;
+    position: relative;
+    width: 170px;
+    margin: 16px;
+    background: white;
+}
+.ezup-add-item {
+    display: inline-block;
+    position: relative;
+    font-size: 5em;
+    padding: 0 32px;
+    margin: 16px;
+    color: gray;
+    text-align: center;
+}
+.ezup-add-item:hover {
+    color: #3fb618;
+    cursor: pointer;
+}
+.ezup-item .form-group {
+    margin: 0;
+}
+.ezup-title {
+    text-align: center;
+}
+.ezup-body {
+    width: 170px;
+    max-height: 175px;
+    position: relative;
+}
+.ezup-controls {
+    position: absolute;
+    bottom: 0;
+    opacity: 0;
+    transition: opacity .2s ease;
+    z-index: 2;
+}
+.ezup-description {
+    position: absolute;
+    bottom: 38px;
+    left: 0;
+    top: 0;
+    width: 100%;
+    resize: none;
+    background: white;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .2s ease;
+    z-index: 1;
+}
+.ezup-img {
+    max-width: 170px;
+    max-height: 175px;
+    z-index: 0;
+}
+.ezup-body:hover .ezup-controls {
+    opacity: 1;
+}

@@ -5,96 +5,48 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width">
         
-        <!-- ==================== CSS ==================== -->
-        
         <!-- Bootstrap CSS -->
         <link rel="stylesheet" href="https://bootswatch.com/cosmo/bootstrap.min.css">
-        <!-- Font Awesome -->
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
-        <!-- Custom Stylesheet Override -->
-        <link rel="stylesheet" href="css/styles.css">
+        <link rel="stylesheet" href="EaseUp/css/ionicons.min.css">
         
-        <!-- ==================== JS ==================== -->
+        <!--EaseUp scripts-->
+        <link rel="stylesheet" href="EaseUp/css/EaseUp.css" type="text/css" />
+        <script type="text/javascript" src="EaseUp/js/EaseUp.js"></script>
         
-        <!-- Imports jQuery -->
-        <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
-        <!-- Upload JS -->
-        <script type="text/javascript" src="js/EaseUp.js"></script>
-        
-        <!--[if IE]>
-        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-        <![endif]-->
-        <!--[if lt IE 9]>
-        <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-        <![endif]-->
     </head>
     <body>
-        <script type="text/javascript">
+        <script>
+            /*global EaseUp*/ 
             EaseUp.init({
-                uploadUrl: 'php/EaseUp.php',
-                updateUrl: 'php/EaseUp.db.php',
-                callback: 'thanks-for-uploading.html',
-                allowed: ['png', 'jpg', 'jpeg', 'gif', 'mp4', 'avi'],
+                uploadUrl: 'EaseUp.php', // used to upload individual items
+                updateUrl: 'EaseUp.db.php', // used to push info to database
+                callback: 'thanks-for-uploading.html', // callback for once upload is finished
+                allowed: ['png', 'jpg', 'mp4', 'avi'], // array of allowed filetypes
                 maxFilesize: 16777216, // in bytes (default: 16 MB)
-                title: false,
-                description: false,
-                accountName: '',
-                titles: true,
-                detailsType: 'description',
-                maxDepth: 0,
-                maxChildren: 10
-        });
+                useTitle: true, // title for entire upload
+                useDescription: true, // description for entire upload
+                accountName: '', // dynamic account name of user
+                titles: true, // title for individual items
+                detailsType: 'description', // details for individual items, possibilities are 'description', 'checklist', 'radios', 'none'
+                maxItems: 4, // max number of children for each parent
+                custom: { // variables for customization
+                    title: "Upload Images",
+                    titlePlaceholder: "Give a title to these images",
+                    descriptionPlaceholder: "Add a description of these images here!",
+                    submitText: "Upload"
+                }
+            });
         </script>
         <div class="container">
-            <div class="row" style="text-align: center">
-                <div class="col-md-10 col-md-offset-1">
-                    <h1>Create a New Lesson</h1>
-                    <div id="ezup-feedback" style="height: 50px;"></div>
+            <div class="row">
+                <div class="jumbotron">
+                    <h1>Welcome to Ease Up!</h1>
+                    <p>Simply complete the form below to use it.</p>
                 </div>
             </div>
-            <div class="row" style="padding-top: 50px;">
-                <form action="" method="post" enctype="multipart/form-data">
-                    <div class="col-md-12 col-md-offset-1">
-                        <div id="ezup-items">
-                            <div class="ezup-item"><a href="javascript:void(0);" onclick="EaseUp.addItem(this)"><i class="fa fa-plus"></i> Add Item</a></div>
-                        </div>
-                        <!--
-                        <div class="form-group">
-                            <label for="title">Title</label>
-                            <input ezup-title="title" type="text" class="form-control squared-off" id="title" name="title" placeholder="Title" autocomplete="off">
-                        </div>
-                        <div class="form-group">
-                            <label for="description">Description</label>
-                            <textarea ezup-description="description" class="form-control squared-off" id="description" name="description" placeholder="Add a description for the upload hierarchy." autocomplete="off"></textarea>
-                        </div>
-                        -->
-                        <br /><br />
-                        <button type="button" id="upload" class="btn btn-primary squared-off" onclick='EaseUp.upload()'><i class="fa fa-upload"></i> Upload</button>
-                    </div>
-                </form>
+            <div class="row">
+                <div id="EaseUp"></div>
             </div>
         </div>
     </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
