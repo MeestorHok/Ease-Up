@@ -5,10 +5,11 @@
     display: inline-block;
     position: relative;
     width: 170px;
+    height: 175px;
     margin: 16px;
     background: white;
 }
-.ezup-add-item {
+#ezup-add-item {
     display: inline-block;
     position: relative;
     font-size: 5em;
@@ -17,7 +18,7 @@
     color: gray;
     text-align: center;
 }
-.ezup-add-item:hover {
+#ezup-add-item:hover {
     color: #3fb618;
     cursor: pointer;
 }

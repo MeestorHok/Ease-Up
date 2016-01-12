@@ -19,7 +19,7 @@
             accountName: '', // dynamic account name of user
             titles: true, // title for individual items
             detailsType: 'description', // details for individual items, possibilities are 'description', 'checklist', 'radios', 'none'
-            maxItems: 4, // max number of children for each parent
+            maxItems: 8, // max number of children for each parent
             custom: { // variables for customization
                 title: "Create Lesson",
                 titlePlaceholder: "Lesson Title",
@@ -38,6 +38,33 @@
                 initialized = true;
             }
         };
+        
+        // insert DOM elements
+        document.addEventListener('DOMContentLoaded',function(){
+            var content = document.getElementById('EaseUp');
+            content.setAttribute('class', 'panel panel-primary');
+            
+            var ezupContent = '<div class="panel-heading" style="text-align:center"><h1>' + options.custom.title + '</h1></div><div class="panel-body"><form action="" method="post" enctype="multipart/form-data">';
+                
+            if (options.useTitle) {
+                ezupContent += '<div class="form-group"><input type="text" class="form-control" placeholder="' + options.custom.titlePlaceholder + '"></div>';
+            }
+            if (options.useDescription) {
+                ezupContent += '<div class="form-group"><textarea class="form-control" placeholder="' + options.custom.descriptionPlaceholder + '" rows="3" style="resize:none"></textarea></div>';
+            }
+                
+            ezupContent += '<div class="panel panel-default"><div class="panel-heading"><a href="javascript:void(0);" onclick="EaseUp.removeAll()" id="ezup-remove-all" class="btn btn-danger btn-xs" style="visibility:hidden"><i class="ion-close"></i> Remove All</a>' +
+                '</div><div class="panel-body" id="ezup-items" droppable="true"><div id="ezup-add-item" onclick="EaseUp.addFile()"><i class="ion-plus" title="Add an item"></i></div>' +
+                '<span class="help-block" style="pointer-events:none">Drag files here or click the button above to upload!</span></div><input id="ezup-files-temp" type="file" accept="' + getMIMEtypes() + '" onchange="EaseUp.fileInputHandler(this)" style="display:none" multiple /></div><button type="submit" id="ezup-submit" class="btn btn-primary disabled" disabled>' + options.custom.submitText + '</button>' +
+                '<p class="pull-right text-muted"><small>Form by EaseUp</small></p></form></div>';
+                
+            content.innerHTML = ezupContent;
+            
+            var filedrag = document.getElementById('ezup-items');
+            filedrag.addEventListener("dragover", self.fileDragHover, false);
+    		filedrag.addEventListener("dragleave", self.fileDragHover, false);
+    		filedrag.addEventListener("drop", self.fileDropHandler, false);
+        });
         
         /*************************Internal Functions*********************************/
         
@@ -157,6 +184,10 @@
             return roundToTwo(bytes / Math.pow(1024, i)) + ' ' + sizes[i];
         }
         
+        self.throwError = function (error) {
+            console.log(error);
+        };
+        
         /************************DOM Manipulation**********************************/
         
         self.openOptions = function (options, type) {
@@ -178,13 +209,18 @@
             }
         };
         
-        self.openFileWindow = function (parent) {
-            parent.children[parent.children.length-1].click();
-        };
-        
         self.deleteItem = function (item) {
             item.parentNode.removeChild(item);
             self.checkItemsLength();
+        };
+        
+        self.removeAll = function () {
+            if(confirm('Are your sure you want to DELETE ALL items?')) {
+                var items = document.querySelectorAll('.ezup-item');
+                for (var i = 0; i < items.length; i++) {
+                    self.deleteItem(items[i]);
+                }
+            }
         };
         
         self.closeOptions = function (options) {
@@ -203,39 +239,64 @@
         };
         
         self.checkItemsLength = function () {
-            var items = document.getElementById('ezup-items');
+            var items = document.getElementById('ezup-items'),
+                submit = document.getElementById('ezup-submit'),
+                deleteAll = document.getElementById('ezup-remove-all');
             
-            if (items.children.length > 2) {
+            if (items.children.length > 2) { // items exist
                 items.children[items.children.length - 1].style.display = 'none'; // hide helper text
+                submit.className = 'btn btn-primary';
+                submit.removeAttribute('disabled');
+                deleteAll.setAttribute('style', 'visibility:visible');
                 
-                if ((items.children.length - 2) >= options.maxItems) {
+                if ((items.children.length - 2) >= options.maxItems) { // max items reached
                     items.children[items.children.length - 2].style.display = 'none'; // hide add button
+                    items.setAttribute('droppable', 'false'); // dont allow items to be dropped
                 } else {
                     items.children[items.children.length - 2].style.display = 'inline-block'; // show add button
+                    items.setAttribute('droppable', 'true'); // allow items to be dropped
                 }
                 return true;
             }
             
             items.children[items.children.length - 1].style.display = 'block'; // show helper text
             items.children[items.children.length - 2].style.display = 'inline-block'; // show add button
+            submit.className = 'btn btn-primary disabled';
+            submit.setAttribute('disabled', '');
+            deleteAll.setAttribute('style', 'visibility:hidden');
+            items.setAttribute('droppable', 'true'); // allow items to be dropped
             return false;
         };
         
-        self.updateImage = function (fileInput, img) {
-            var file = fileInput.files[0],
-                filesize = file.size,
-                filename = file.name,
+        self.createItem = function (imgSrc) {
+            var newItem = '<div class="ezup-item"><div class="form-group"><input class="form-control ezup-title" type="text" name="title" placeholder="Title" /></div><div class="ezup-body"><div class="btn-group btn-group-justified ezup-controls" role="group"><a href="javascript:void(0);" onclick="EaseUp.openOptions(this.parentNode.nextSibling, \'delete\')" class="btn btn-danger" title="Delete Item"><i class="ion-close"></i></a>';
+            if (options.detailsType != '' || options.detailsType == 'none') { // if details are allowed
+                newItem += '<a href="javascript:void(0);" onclick="EaseUp.openOptions(this.parentNode.nextSibling, \'edit\')" class="btn btn-success" title="Edit Details"><i class="ion-edit"></i></a>';
+            }
+            
+            newItem += '</div><div class="btn-group btn-group-justified ezup-controls" role="group" style="display:none;opacity:1"></div>';
+            
+            if (options.detailsType == 'description') {
+                newItem += '<div class="form-group"><textarea class="form-control ezup-description" name="description" placeholder="Description"></textarea><input type="hidden" name="details" /></div>';
+            } else if (options.detailsType == 'checklist') {
+                // checklist
+            } else if (options.detailsType == 'radios') {
+                // radio list
+            }
+            
+            newItem += '<img src="' + imgSrc +'" class="img-rounded ezup-img" /></div></div>';
+            
+            document.getElementById('ezup-add-item').insertAdjacentHTML('beforebegin', newItem);
+            
+            self.checkItemsLength();
+        };
+        
+        /************************File Handling**********************************/
+        
+        self.parseFile = function (file) {
+            var filename = file.name,
                 fileExt = filename.split('.')[filename.split('.').length - 1].toLowerCase(),
                 fileCategory = getFileCategory(fileExt);
-            
-            if (filesize > options.maxFilesize) {
-                self.throwError('That file is too large!');
-                return;
-            }
-            if (options.allowed.indexOf(fileExt) === -1) {
-                self.throwError('That file type is not allowed!');
-                return;
-            }
             
             // decide whether to render an image thumbnail or video thumbnail
             if (fileCategory == 'video') { // render video thumbnail
@@ -254,74 +315,78 @@
                 video.onloadeddata = function(){
                     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                     var dataURI = canvas.toDataURL('image/jpeg');
-                    img.setAttribute('src', dataURI);
+                    self.createItem(dataURI);
                 };
                 video.remove();
                 canvas.remove();
             } else if (fileCategory == 'image') { // render image
                 var reader = new FileReader();
                 reader.onload = function (e) {
-                    img.setAttribute('src', e.target.result);
+                    self.createItem(e.target.result);
                 };
                 reader.readAsDataURL(file);
-            } else if (fileCategory == 'audio') {
-                img.setAttribute('src', 'EaseUp/images/audio.jpg');
+            } else if (fileCategory == 'audio') { // give default audio image
+                self.createItem('EaseUp/images/audio.jpg');
+            } else { // give default image
+                self.createItem('EaseUp/images/default.jpg');
             }
-            
-            img.setAttribute('alt', filename);
-            img.setAttribute('title', filename + ' | ' + formatByteSize(filesize));
         };
         
-        self.addItem = function (addButton) {
-            var newItem = '<div class="ezup-item"><div class="form-group"><input class="form-control ezup-title" type="text" name="title" placeholder="Title" /></div><div class="ezup-body"><div class="btn-group btn-group-justified ezup-controls" role="group"><a href="javascript:void(0);" onclick="EaseUp.openOptions(this.parentNode.nextSibling, \'delete\')" class="btn btn-danger" title="Delete Item"><i class="ion-close"></i></a>';
-            if (options.detailsType != '' || options.detailsType == 'none') { // if details are allowed
-                newItem += '<a href="javascript:void(0);" onclick="EaseUp.openOptions(this.parentNode.nextSibling, \'edit\')" class="btn btn-warning" title="Edit Details"><i class="ion-edit"></i></a>';
+        self.checkFiles = function (files) {
+            var items = document.getElementById('ezup-items'),
+                itemsUsed = items.children.length - 2;
+            
+            if ((itemsUsed + files.length) > options.maxItems) {
+                self.throwError('You have selected too many items! The max number of files is ' + options.maxItems);
             }
-            
-            newItem += '<a href="javascript:void(0);" onclick="EaseUp.openFileWindow(this.parentNode.parentNode)" class="btn btn-primary" title="Change File"><i class="ion-arrow-swap"></i></a></div><div class="btn-group btn-group-justified ezup-controls" role="group" style="display:none;opacity:1"></div>';
-            
-            if (options.detailsType == 'description') {
-                newItem += '<div class="form-group"><textarea class="form-control ezup-description" name="description" placeholder="Description"></textarea><input type="hidden" name="details" /></div>';
-            } else if (options.detailsType == 'checklist') {
-                // checklist
-            } else if (options.detailsType == 'radios') {
-                // radio list
+            for (var i = 0; i < Math.min(files.length, (options.maxItems - itemsUsed)); i++) {
+                var file = files[i],
+                    filename = file.name,
+                    fileExt = filename.split('.')[filename.split('.').length - 1].toLowerCase();
+                
+                if (options.allowed.indexOf(fileExt) === -1) { // if file type is not allowed
+                    self.throwError('That file type is not allowed!');
+                } else {
+                    if (file.size > options.maxFilesize) { // if file size is not allowed
+                        self.throwError('That file size is too large! The max file size is ' + formatByteSize(options.maxFilesize));
+                    } else {
+                        self.parseFile(file);
+                    }
+                }
             }
-            
-            newItem += '<img src="EaseUp/images/default.jpg" class="img-rounded ezup-img" /><input name="file" type="file" accept="' + getMIMEtypes() + '" onchange="EaseUp.updateImage(this, this.previousSibling)" style="display:none"></div></div>';
-            
-            addButton.insertAdjacentHTML('beforebegin', newItem);
-            
-            var parent = addButton.parentNode,
-                item = parent.children[parent.children.length - 3],
-                body = item.lastChild;
-            
-            body.children[body.children.length - 1].click();
-            
-            self.checkItemsLength();
         };
         
-        document.addEventListener('DOMContentLoaded',function(){
-            var content = document.getElementById('EaseUp');
-            content.setAttribute('class', 'panel panel-primary');
-            var ezupContent = '<div class="panel-heading" style="text-align:center"><h1>' + options.custom.title + '</h1></div><div class="panel-body"><form action="" method="post" enctype="multipart/form-data">';
-                
-            if (options.useTitle) {
-                ezupContent += '<div class="form-group"><input type="text" class="form-control" placeholder="' + options.custom.titlePlaceholder + '"></div>';
-            }
-            if (options.useDescription) {
-                ezupContent += '<div class="form-group"><textarea class="form-control" placeholder="' + options.custom.descriptionPlaceholder + '" rows="3" style="resize:none"></textarea></div>';
-            }
-                
-            ezupContent += '<div class="panel panel-default"><div class="panel-heading"><ul class="nav nav-pills">' +
-                    '<li><a href="javascript:void(0);">afgsdf</a></li>' +
-                    '<li><a href="javascript:void(0);">sdfgsdfg</a></li>' +
-                    '<li><a href="javascript:void(0);">afgsdf</a></li>' +
-                '</ul></div><div class="panel-body" id="ezup-items"><div class="ezup-add-item" onclick="EaseUp.addItem(this)"><i class="ion-plus" title="Add an item"></i></div>' +
-                '<span class="help-block">Add a file to upload!</span></div></div><button type="submit" class="btn btn-primary">' + options.custom.submitText + '</button>' +
-                '<p class="pull-right text-muted"><small>Form by <a href="#">EaseUp</a></small></p></form></div>';
-            content.innerHTML = ezupContent;
-        });
+        self.fileInputHandler = function (fileInput) {
+            var files = fileInput.files;
+            self.checkFiles(files);
+        };
+        
+        self.fileDropHandler = function (e) {
+            self.fileDragHover(e);
+            var dropTarget = document.getElementById('ezup-items');
+        	if (dropTarget.getAttribute('droppable')) {
+            	var files = e.target.files || e.dataTransfer.files;
+            	self.checkFiles(files);
+        	}
+        };
+        
+        self.fileDragHover = function (e) {
+        	e.stopPropagation();
+        	e.preventDefault();
+        	var dropTarget = document.getElementById('ezup-items');
+        	if (dropTarget.getAttribute('droppable')) {
+            	if (e.target === dropTarget || 
+            	    e.target === document.getElementById('ezup-add-item') ||
+            	    e.target === document.getElementById('ezup-add-item').childNodes[0]) {
+            	        dropTarget.style.border = (e.type == "dragover" ? "2px dashed blue" : "none");
+            	}
+        	}
+        };
+        
+        self.addFile = function () {
+            var fileInput = document.getElementById('ezup-files-temp');
+            fileInput.click();
+        };
         
         return self;
     })();
